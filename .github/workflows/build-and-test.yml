@@ -8,12 +8,13 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04    
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
-
+        with:
+          submodules: recursive
       - name: Install dependencies
         run: |
           sudo apt-get update
