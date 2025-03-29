@@ -14,11 +14,16 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build cmake g++
+
       - name: Configure with CMake Preset
-        run: cmake --preset linux
+        run: cmake --preset linux-gcc
 
       - name: Build project
-        run: cmake --build build/linux --config Release
+        run: cmake --build build/linux-gcc --config Release
 
       - name: Run tests
         run: ctest --preset core-test -C Release
