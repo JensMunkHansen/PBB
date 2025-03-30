@@ -2,9 +2,9 @@ include(spsExportHeader)
 
 set(TARGET_NAME PBB)
 add_library(${TARGET_NAME} ${PBB_LIB_TYPE})
-if (NOT ${PBB_LIB_TYPE} STREQUAL INTERFACE)
-  sps_generate_custom_export_header(${TARGET_NAME})
-endif()
+
+sps_generate_custom_export_header(${TARGET_NAME})
+
 target_sources(${TARGET_NAME}
   PUBLIC
     FILE_SET public_headers
