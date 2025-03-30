@@ -4,10 +4,10 @@ namespace PBB::Thread
 {
 
 template <typename Tag>
-  ThreadPool<Tag>::ThreadPool()
-    : ThreadPool(std::max(2u, std::thread::hardware_concurrency() - 1u))
-  {
-  }
+ThreadPool<Tag>::ThreadPool()
+  : ThreadPool(std::max(2u, std::thread::hardware_concurrency() - 1u))
+{
+}
 
 template <typename Tag>
 ThreadPool<Tag>::ThreadPool(std::size_t numThreads)
@@ -28,83 +28,83 @@ ThreadPool<Tag>::~ThreadPool()
 template <typename Tag>
 void ThreadPool<Tag>::Destroy()
 {
-    m_done.test_and_set(std::memory_order_release);
+  m_done.test_and_set(std::memory_order_release);
 
 #ifdef PBB_USE_TBB_QUEUE
-    {
-      std::lock_guard lock(m_mutex);
-      m_condition.notify_all();
-    }
+  {
+    std::lock_guard lock(m_mutex);
+    m_condition.notify_all();
+  }
 #else
-    m_workQueue.Invalidate();
+  m_workQueue.Invalidate();
 #endif
 
-    for (auto& thread : m_threads)
+  for (auto& thread : m_threads)
+  {
+    if (thread.joinable())
     {
-      if (thread.joinable())
-      {
-        thread.join();
-      }
+      thread.join();
     }
+  }
 }
 
 template <typename Tag>
 void ThreadPool<Tag>::Worker()
+{
+  while (!m_done.test(std::memory_order_acquire))
   {
-    while (!m_done.test(std::memory_order_acquire))
-    {
-      std::unique_ptr<IThreadTask> pTask{ nullptr };
+    std::unique_ptr<IThreadTask> pTask{ nullptr };
 
 #ifdef PBB_USE_TBB_QUEUE
-      {
-        // Acquire the lock before waiting on the condition variable
-        std::unique_lock lock(m_mutex);
-        // Wait until either:
-        // 1. Shutdown has been requested (m_done is set), OR
-        // 2. There's work available in the queue
-        //
-        // Note: condition_variable::wait can return spuriously,
-        // so this lambda acts as a guard to re-check the condition.
-        m_condition.wait(
-          lock, [&] { return m_done.test(std::memory_order_acquire) || !m_workQueue.empty(); });
+    {
+      // Acquire the lock before waiting on the condition variable
+      std::unique_lock lock(m_mutex);
+      // Wait until either:
+      // 1. Shutdown has been requested (m_done is set), OR
+      // 2. There's work available in the queue
+      //
+      // Note: condition_variable::wait can return spuriously,
+      // so this lambda acts as a guard to re-check the condition.
+      m_condition.wait(
+        lock, [&] { return m_done.test(std::memory_order_acquire) || !m_workQueue.empty(); });
 
-        // Important: we must re-check m_done after waking up
-        // because:
-        // - We could have been woken by notify_all during shutdown
-        // - A spurious wakeup may have occurred
-        // - The queue could be empty even if we were notified
-        //
-        // So this is the canonical safe way to handle shutdown.
-        if (m_done.test(std::memory_order_acquire))
-          break;
+      // Important: we must re-check m_done after waking up
+      // because:
+      // - We could have been woken by notify_all during shutdown
+      // - A spurious wakeup may have occurred
+      // - The queue could be empty even if we were notified
+      //
+      // So this is the canonical safe way to handle shutdown.
+      if (m_done.test(std::memory_order_acquire))
+        break;
 
-        // At this point we assume there's work available.
-        // Try to get a task from the queue — it's possible another
-        // thread beat us to it, so this may still fail.
-        if (!m_workQueue.try_pop(pTask) || !pTask)
-          continue;
-      }
+      // At this point we assume there's work available.
+      // Try to get a task from the queue — it's possible another
+      // thread beat us to it, so this may still fail.
+      if (!m_workQueue.try_pop(pTask) || !pTask)
+        continue;
+    }
 #else
-      // Blocking queue handles its own wait logic
-      if (!m_workQueue.Pop(pTask))
+    // Blocking queue handles its own wait logic
+    if (!m_workQueue.Pop(pTask))
+    {
+      if (m_done.test(std::memory_order_acquire))
       {
-        if (m_done.test(std::memory_order_acquire))
-        {
-          break;
-        }
-        else
-        {
-          continue;
-        }
+        break;
       }
-      if (!pTask)
+      else
       {
         continue;
       }
-#endif
-      pTask->Execute();
     }
+    if (!pTask)
+    {
+      continue;
+    }
+#endif
+    pTask->Execute();
   }
+}
 
 template <typename Tag>
 size_t ThreadPool<Tag>::NThreadsGet() const
@@ -113,35 +113,3 @@ size_t ThreadPool<Tag>::NThreadsGet() const
 }
 
 } // namespace PBB::Thread
-
-#if 0
-
-#if defined(_MSC_VER)
-#define PBB_USED __declspec(selectany)
-#else
-#define PBB_USED __attribute__((used))
-#endif
-
-
-// /NODEFAULTLIB (must not be used)
-// Use std::axit if singleton resides in DLL
-// If used across use DllMain
-
-#include "YourSingletonHeader.hpp"
-#include <windows.h>
-
-BOOL APIENTRY DllMain(HMODULE hModule,
-                      DWORD  ul_reason_for_call,
-                      LPVOID lpReserved)
-{
-    switch (ul_reason_for_call)
-    {
-    case DLL_PROCESS_DETACH:
-        // This is called when the DLL is unloaded
-        PBB::Singleton<YourClass>::InstanceDestroy();
-        break;
-    }
-    return TRUE;
-}
-
-#endif

@@ -1,6 +1,10 @@
-set(TARGET_NAME PBB)
+include(spsExportHeader)
 
+set(TARGET_NAME PBB)
 add_library(${TARGET_NAME} ${PBB_LIB_TYPE})
+if (NOT ${PBB_LIB_TYPE} STREQUAL INTERFACE)
+  sps_generate_custom_export_header(${TARGET_NAME})
+endif()
 target_sources(${TARGET_NAME}
   PUBLIC
     FILE_SET public_headers
@@ -29,7 +33,11 @@ if(NOT PBB_HEADER_ONLY)
       ThreadPool.cxx
   )
   target_link_libraries(${TARGET_NAME} PUBLIC build)
-    
+  if (WIN32 AND BUILD_SHARED_LIBS)
+    target_sources(${TARGET_NAME}
+      PRIVATE
+        WinDllMain.cxx)
+  endif()
 endif()
 
 # Add compile definition for headers to switch between inline/non-inline
