@@ -12,4 +12,4 @@ ThreadPool<Tags::DefaultPool>& GetDefaultThreadPool()
 {
   return GetThreadPoolInstance<Tags::DefaultPool>();
 }
-}
+} // namespace PBB::Thread

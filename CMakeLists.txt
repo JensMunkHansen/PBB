@@ -23,6 +23,7 @@ add_library(build INTERFACE)
 include(spsCompilerPlatformFlags)
 include(spsAsan)
 include(spsInstallDirs)
+include(spsConfig)
 
 if(PBB_HEADER_ONLY)
   set(PBB_LIB_TYPE INTERFACE)
@@ -31,7 +32,6 @@ elseif(BUILD_SHARED_LIBS)
 else()
   set(PBB_LIB_TYPE STATIC)
 endif()
-
 
 include(CTest)
 find_package(Catch2 3.5.2 REQUIRED CONFIG)

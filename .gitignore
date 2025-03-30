@@ -3,3 +3,5 @@ build/
 *~
 compile_command.json
 compile_commands.json
+#*/**
+**/#*

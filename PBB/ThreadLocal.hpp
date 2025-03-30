@@ -14,6 +14,7 @@
 #error "This header requires at least C++17"
 #endif
 
+#include <PBB/Config.h>
 #include <PBB/Memory.hpp>
 
 #include <atomic>
@@ -45,7 +46,7 @@ class ThreadLocal
 {
 private:
   using StorageSharedPtr = std::shared_ptr<U>;
-#ifdef PBB_USE_TBB
+#ifdef PBB_USE_TBB_MAP
   tbb::concurrent_unordered_map<std::thread::id, StorageSharedPtr> _storage; // Thread-local storage
 #else
   std::unordered_map<std::thread::id, StorageSharedPtr> _storage;
@@ -90,7 +91,7 @@ public:
     std::thread::id thread_id = std::this_thread::get_id();
 
     U* pValue = nullptr;
-#if defined(PBB_USE_TBB)
+#if defined(PBB_USE_TBB_MAP)
     // TBB version - Corrected for C++17
     auto it = _storage.find(thread_id);
     if (it == _storage.end())
@@ -153,6 +154,8 @@ public:
 } // namespace detail::v17
 
 // ----------------- C++20 Version (support for std::atomic<std::shared_ptr<T>> ------------
+
+// Not working unless I use TBB
 #if __cplusplus >= 202002L
 namespace detail::v20
 {
@@ -167,7 +170,7 @@ private:
   // Must be copyable (or moveable), so we cannot use std::unique_ptr
   // using StorageSharedPtr = std::atomic<std::shared_ptr<T>>;
   using StorageSharedPtr = std::atomic<std::shared_ptr<U>>;
-#ifdef PBB_USE_TBB
+#ifdef PBB_USE_TBB_MAP
   tbb::concurrent_unordered_map<std::thread::id, StorageSharedPtr> _storage;
 #else
   std::unordered_map<std::thread::id, StorageSharedPtr> _storage;
@@ -213,7 +216,7 @@ public:
     std::thread::id thread_id = std::this_thread::get_id();
 
     { // Scoped lock to protect storage_ from race conditions
-#ifndef PBB_USE_TBB
+#ifndef PBB_USE_TBB_MAP
       std::lock_guard<std::mutex> lock(
         _storage_mutex); // Can be skipped if we use tbb::concurrent_unordered_map
 #endif
@@ -272,7 +275,7 @@ public:
 namespace detail
 {
 #if __cplusplus >= 202002L
-using namespace detail::v20; // Default to latest implementation in C++20+
+using namespace detail::v17; // Default to latest implementation in C++20+
 #else
 using namespace detail::v17; // Default to C++17 implementation otherwise
 #endif

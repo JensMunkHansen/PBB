@@ -1,4 +1,3 @@
-#include "PBB/ThreadPoolTags.hpp"
 #include <catch2/catch_test_macros.hpp>
 
 #include <chrono>
@@ -21,6 +20,18 @@ int shortTask()
 }
 
 /**
+ * Medium task executes in 150 milliseconds
+ *
+ *
+ * @return
+ */
+int mediumTask()
+{
+  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  return 1;
+}
+
+/**
  * Long task executes in 100 milliseconds
  *
  *
@@ -28,7 +39,7 @@ int shortTask()
  */
 int longTask()
 {
-  std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
   return 1;
 }
 }
@@ -39,25 +50,31 @@ int longTask()
  */
 TEST_CASE("ThreadPool_No_Starvation", "[ThreadPool]")
 {
+  using namespace std::chrono;
   // No tasks are executed
-  int shortTaskExecuted = 0;
+  int mediumTaskExecuted = 0;
   int longTaskExecuted = 0;
 
   // Pool with single thread
   auto& myPool = ThreadPool<Tags::DefaultPool>::InstanceGet();
 
   // Pointer to show if task has been executed
-  int* pShortTaskExecuted = &shortTaskExecuted;
+  int* pMediumTaskExecuted = &mediumTaskExecuted;
   int* pLongTaskExecuted = &longTaskExecuted;
 
+  auto start = steady_clock::now();
   auto taskFuture0 = myPool.Submit([=]() -> void { *pLongTaskExecuted = longTask(); });
-  auto taskFuture1 = myPool.Submit([=]() -> void { *pShortTaskExecuted = shortTask(); });
+  auto taskFuture1 = myPool.Submit([=]() -> void { *pMediumTaskExecuted = mediumTask(); });
 
   taskFuture0.Get();
   taskFuture1.Get();
+  auto end = steady_clock::now();
 
+  auto duration = duration_cast<milliseconds>(end - start);
+  REQUIRE(duration.count() >= 150);
+  REQUIRE(duration.count() < 200);
   REQUIRE(longTaskExecuted == 1);
-  REQUIRE(shortTaskExecuted == 1);
+  REQUIRE(mediumTaskExecuted == 1);
 }
 
 /**

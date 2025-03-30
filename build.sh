@@ -21,8 +21,9 @@ libconfigs=(
 #  "Shared:-DBUILD_SHARED_LIBS=ON -DPBB_HEADER_ONLY=OFF"
 )
 
-configs=("Release"
-#         "Debug"
+configs=(
+    "Release"
+#    "Debug"
 #         "Asan"
 )
 
@@ -31,7 +32,7 @@ for libconfig in "${libconfigs[@]}"; do
   echo "==== Building $name Configuration ===="
 
   # Configure
-  bear_execute "cmake --preset linux -B $(pwd)/build/$name $cmake_args"
+  bear_execute "cmake --preset linux-gcc -B $(pwd)/build/$name $cmake_args"
 
   for config in "${configs[@]}"; do
       bear_execute "cmake --build build/$name --config $config"

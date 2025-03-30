@@ -21,11 +21,14 @@
 #include <type_traits>
 #include <vector>
 
+#include <PBB/Config.h>
 #include <PBB/MeyersSingleton.hpp>
 #include <PBB/PhoenixSingleton.hpp>
 #include <PBB/ThreadPoolTags.hpp>
 
-namespace PBB::Thread
+namespace PBB
+{
+namespace Thread
 {
 template <typename Tag>
 class ThreadPool : public MeyersSingleton<ThreadPool<Tag>>
@@ -37,7 +40,7 @@ protected:
 
   explicit ThreadPool(std::size_t numThreads);
 
-  ~ThreadPool();
+  ~ThreadPool() override;
 
 public:
   size_t NThreadsGet() const;
@@ -118,7 +121,6 @@ private:
     Func m_func;
   };
 
-private:
   void Worker();
   void Destroy();
 
@@ -134,7 +136,18 @@ private:
 #ifndef PBB_HEADER_ONLY
 extern template class ThreadPool<Tags::DefaultPool>; // Instantiate explicitly if needed
 #endif
-} // namespace PBB::Thread
+
+// Expose default Submit function
+namespace DefaultPool
+{
+template <typename F>
+auto Submit(F&& f)
+{
+  return ThreadPool<Tags::DefaultPool>::InstanceGet().Submit(std::forward<F>(f));
+}
+} // namespace DefaultPool
+} // namespace Thread
+} // namespace PBB
 
 #include "ThreadPool.inl" // Submit is inline/templated
 #include "ThreadPool.txx" // Always included for header-only

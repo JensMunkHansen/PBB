@@ -1,45 +1,55 @@
-#include <sps/threadlocal.hpp>
+#include "PBB/ThreadPool.hpp"
+#include "PBB/ThreadPoolTags.hpp"
+#include <catch2/catch_test_macros.hpp>
+
+#include <PBB/ParallelFor.hpp>
+#include <PBB/ThreadLocal.hpp>
 
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <string>
 
+namespace
+{
 class ExampleFunctor
 {
 public:
-  mutable int globalSum;
+  int globalSum;
   explicit ExampleFunctor()
-    : threadLocalStorage()
   {
+    globalSum = 0;
+    threadLocalStorage = std::make_unique<PBB::ThreadLocal<int>>();
   }
 
   // Initialize thread-local variables
   void Initialize()
   {
-    T& localSum = threadLocalStorage.GetThreadLocalValue();
-    localSum = 0; // Initialize to zero
-    // threadLocalStorage.RegisterThreadLocalValue(); // Register the thread-local variable
+    thread_local bool initialized = false;
+    T& localSum = threadLocalStorage->GetThreadLocalValue();
+    if (!initialized)
+    {
+      localSum = 0;
+      initialized = true;
+    }
   }
 
   // Process data within the given range
-  void operator()(int iStart, int iEnd, std::ostringstream& threadOutput)
+  void operator()(int iStart, int iEnd)
   {
-    T& localSum = threadLocalStorage.GetThreadLocalValue();
+    int& localSum = threadLocalStorage->GetThreadLocalValue();
     for (int i = iStart; i < iEnd; ++i)
     {
       localSum += i; // Sum the range of numbers
     }
-    threadOutput << "Thread [" << std::this_thread::get_id() << "] sum: " << localSum
-                 << " for range [" << iStart << ", " << iEnd << ")"
-                 << std::endl; // Collecting output locally
   }
 
   // Reduce the results across all threads
-  void Reduce() const
+  void Reduce()
   {
     globalSum = 0;
-    std::lock_guard<std::mutex> lock(threadLocalStorage.GetMutex()); // Lock during reduction
-    const auto& registry = threadLocalStorage.GetRegistry();
+    std::lock_guard<std::mutex> lock(threadLocalStorage->GetMutex()); // Lock during reduction
+    const auto& registry = threadLocalStorage->GetRegistry();
     for (const auto& entry : registry)
     {
       if (entry)
@@ -47,72 +57,80 @@ public:
         globalSum += *entry;
       }
     }
-    std::cout << "Global result: " << globalSum << std::endl; // Final output
   }
 
-private:
-  using T = int;
-  sps::ThreadLocal<T> threadLocalStorage; // Thread-local storage for this functor
-};
-
-class ThreadedDispatcher
-{
 public:
-  template <typename Functor>
-  int Dispatch(Functor& func, int dataSize, int numThreads)
-  {
-    std::vector<std::thread> threads(numThreads);              // Vector to hold threads
-    std::vector<std::ostringstream> threadOutputs(numThreads); // Collect thread outputs
+  using T = int;
+  std::unique_ptr<PBB::ThreadLocal<T>> threadLocalStorage;
 
-    // Step 1 and 2: Initialize thread-local data and process the data in chunks
-    int chunkSize = dataSize / numThreads;
-    int remaining = dataSize % numThreads;
-
-    for (int t = 0; t < numThreads; ++t)
-    {
-      threads[t] = std::thread(
-        [&func, &threadOutputs, t, chunkSize, dataSize, remaining, numThreads]
-        {
-          func.Initialize();
-
-          int iStart = t * chunkSize;
-          int iEnd = (t + 1) * chunkSize;
-
-          if (t == numThreads - 1)
-          {
-            iEnd += remaining; // Last thread takes the remaining elements
-          }
-
-          func(iStart, iEnd, threadOutputs[t]); // Process data and collect output locally
-        });
-    }
-
-    // Join all threads after processing
-    for (auto& thread : threads)
-    {
-      thread.join();
-    }
-
-    // Output all collected thread outputs in the main thread
-    for (const auto& output : threadOutputs)
-    {
-      std::cout << output.str();
-    }
-
-    // Step 3: Perform the reduction by the main thread
-    func.Reduce();
-    return func.globalSum;
-  }
+  // But then ExampleFunctor should be a shared ptr.
+  // std::unique_ptr<PBB::ThreadLocal<T>> threadLocalStorage;
+  // But this is tricky
 };
 
-int main()
+struct VectorOutputFunctor
+{
+  using T = std::vector<int>;
+  std::unique_ptr<PBB::ThreadLocal<T>> threadLocalStorage;
+
+  std::vector<int> allValues;
+  explicit VectorOutputFunctor()
+  {
+    threadLocalStorage = std::make_unique<PBB::ThreadLocal<std::vector<int>>>();
+  }
+
+  // Initialize thread-local variables
+  void Initialize()
+  {
+    thread_local bool initialized = false;
+    if (!initialized)
+    {
+      auto& localValues = threadLocalStorage->GetThreadLocalValue();
+      localValues = std::vector<int>();
+    }
+  }
+
+  // Process data within the given range
+  void operator()(int iStart, int iEnd)
+  {
+    auto& localValues = threadLocalStorage->GetThreadLocalValue();
+    for (int i = iStart; i < iEnd; ++i)
+    {
+      localValues.push_back(i);
+    }
+  }
+
+  // Reduce the results across all threads
+  void Reduce()
+  {
+    std::lock_guard<std::mutex> lock(threadLocalStorage->GetMutex()); // Lock during reduction
+    const auto& registry = threadLocalStorage->GetRegistry();
+    for (const auto& entry : registry)
+    {
+      if (entry)
+      {
+        allValues.insert(allValues.begin(), entry->begin(), entry->end());
+      }
+    }
+  }
+
+  // But then ExampleFunctor should be a shared ptr.
+  // std::unique_ptr<PBB::ThreadLocal<T>> threadLocalStorage;
+  // But this is tricky
+};
+
+} // namespace
+
+TEST_CASE("ThreadLocal_Dispatch_Using_ThreadLocal", "[ThreadLocal]")
 {
   ExampleFunctor func;
-  ThreadedDispatcher dispatcher;
-  int dataSize = 100;
-  int numThreads = 35; // Start with 16 threads to demonstrate scaling
+  PBB::ParallelFor(0, 100, func);
+  REQUIRE(func.globalSum == 4950);
+}
 
-  int globalSum = dispatcher.Dispatch(func, dataSize, numThreads);
-
-  return globalSum == 4950 ? 0 : 1;
+TEST_CASE("ThreadLocal_Dispatch_Using_ThreadLocalVector", "[ThreadLocal]")
+{
+  VectorOutputFunctor func;
+  PBB::ParallelFor(0, 100, func);
+  REQUIRE(func.allValues.size() == 100);
 }

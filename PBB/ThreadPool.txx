@@ -5,7 +5,7 @@ namespace PBB::Thread
 
 template <typename Tag>
 ThreadPool<Tag>::ThreadPool()
-  : ThreadPool(std::max(2u, std::thread::hardware_concurrency() - 1u))
+  : ThreadPool(std::max(2u, std::thread::hardware_concurrency() + 1u) - 1u)
 {
 }
 
