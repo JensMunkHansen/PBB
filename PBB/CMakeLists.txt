@@ -1,6 +1,6 @@
 include(spsExportHeader)
 
-set(PBB_USE_TBB_MAP FALSE)
+#set(PBB_USE_TBB_MAP FALSE)
 set(TARGET_NAME PBB)
 add_library(${TARGET_NAME} ${PBB_LIB_TYPE})
 

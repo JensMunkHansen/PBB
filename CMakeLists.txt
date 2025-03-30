@@ -18,6 +18,9 @@ cmake_dependent_option(
   OFF
 )
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)  # Use -std=c++20 instead of -std=gnu++20
 add_library(build INTERFACE)
 
 include(spsCompilerPlatformFlags)
@@ -38,8 +41,10 @@ find_package(Catch2 3.5.2 REQUIRED CONFIG)
 include(Catch)
 enable_testing()
 
-find_package(TBB REQUIRED)
-set(TBB_LIBRARIES /opt/intel/oneapi/tbb/2022.0/lib/libtbb.so)
+find_package(TBB QUIET)
+if (TBB_Found)
+  set(TBB_LIBRARIES /opt/intel/oneapi/tbb/2022.0/lib/libtbb.so)
+endif()
 
 add_subdirectory(PBB)
 
