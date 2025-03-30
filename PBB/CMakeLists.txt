@@ -15,6 +15,8 @@ target_sources(${TARGET_NAME}
       ThreadPool.hpp
       ThreadPool.inl
       ThreadPool.txx
+      Memory.hpp
+      ThreadLocal.hpp
       MeyersSingleton.hpp        
   PRIVATE
     PhoenixSingleton.hpp        
