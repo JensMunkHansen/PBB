@@ -34,9 +34,12 @@ endif()
 
 
 include(CTest)
-find_package(Catch2 3.5.2 REQUIRED)
+find_package(Catch2 3.5.2 REQUIRED CONFIG)
 include(Catch)
 enable_testing()
+
+find_package(TBB REQUIRED)
+set(TBB_LIBRARIES /opt/intel/oneapi/tbb/2022.0/lib/libtbb.so)
 
 add_subdirectory(PBB)
 

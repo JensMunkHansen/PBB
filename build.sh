@@ -17,13 +17,14 @@ bear_execute() {
 # Define configurations
 libconfigs=(
   "HeaderOnly:-DBUILD_SHARED_LIBS=OFF -DPBB_HEADER_ONLY=ON"
-  "Static:-DBUILD_SHARED_LIBS=OFF -DPBB_HEADER_ONLY=OFF"
-  "Shared:-DBUILD_SHARED_LIBS=ON -DPBB_HEADER_ONLY=OFF"
+#  "Static:-DBUILD_SHARED_LIBS=OFF -DPBB_HEADER_ONLY=OFF"
+#  "Shared:-DBUILD_SHARED_LIBS=ON -DPBB_HEADER_ONLY=OFF"
 )
 
 configs=("Release"
-         "Debug"
-         "Asan")
+#         "Debug"
+#         "Asan"
+)
 
 for libconfig in "${libconfigs[@]}"; do
   IFS=":" read -r name cmake_args <<< "$libconfig"
