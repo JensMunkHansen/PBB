@@ -1,22 +1,25 @@
+function(add_cxx_test target)
+  add_executable(${target} "${target}.cxx")
+  target_link_libraries(${target} PRIVATE Catch2::Catch2WithMain)
+  target_link_libraries(${target} PRIVATE PBB)
+  target_link_libraries(${target} PUBLIC build)
+  if (PBB_USE_TBB_MAP OR PBB_USE_TBB_QUEUE)
+    target_link_libraries(${target} PRIVATE ${TBB_LIBRARIES})
+  endif()
+  catch_discover_tests(${target})
+endfunction()
 
-add_executable(MRMWQueueTest MRMWQueueTest.cxx)
-target_link_libraries(MRMWQueueTest PRIVATE Catch2::Catch2WithMain)
-target_link_libraries(MRMWQueueTest PRIVATE PBB)
-target_link_libraries(MRMWQueueTest PUBLIC build)
+add_cxx_test(MRMWQueueTest)
+add_cxx_test(PhoenixSingletonTest)
+add_cxx_test(MeyersSingletonTest)
+add_cxx_test(ThreadPoolTest)
 
-add_executable(PhoenixSingletonTest PhoenixSingletonTest.cxx)
-target_link_libraries(PhoenixSingletonTest PRIVATE Catch2::Catch2WithMain)
-target_link_libraries(PhoenixSingletonTest PRIVATE PBB)
-target_link_libraries(PhoenixSingletonTest PUBLIC build)
+#add_cxx_test(ParallelForTest)
+#add_cxx_test(ThreadLocalTest)
 
-add_executable(MeyersSingletonTest MeyersSingletonTest.cxx)
-target_link_libraries(MeyersSingletonTest PRIVATE Catch2::Catch2WithMain)
-target_link_libraries(MeyersSingletonTest PRIVATE PBB)
-target_link_libraries(MeyersSingletonTest PUBLIC build)
 
-catch_discover_tests(MRMWQueueTest)
-catch_discover_tests(PhoenixSingletonTest)
-catch_discover_tests(MeyersSingletonTest)
+
+
 # inline std::shared_ptr<ThreadPool> GetThreadPoolPtr()
 # set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
 

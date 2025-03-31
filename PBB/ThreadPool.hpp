@@ -7,103 +7,60 @@
 #include <atomic>
 #include <concepts>
 #include <condition_variable>
+#include <cstdint>
 #include <functional>
 #include <future>
 #include <memory>
 #include <mutex>
+#ifdef PBB_USE_TBB_QUEUE
+#include <tbb/concurrent_queue.h>
+#else
+#include <PBB/MRMWQueue.hpp>
+#endif
 #include <thread>
 #include <type_traits>
 #include <vector>
 
-#include "ThreadPoolTags.hpp"
-#include <PBB/Singleton.hpp>
+#include <PBB/MeyersSingleton.hpp>
+#include <PBB/ResettableSingleton.hpp>
+#include <PBB/ThreadPoolBase.hpp>
+#include <PBB/ThreadPoolTags.hpp>
+#include <PBB/ThreadPoolTraits.hpp>
 
 namespace PBB::Thread
 {
 
 template <typename Tag>
-class ThreadPool // : public Singleton<ThreadPool<Tag>>
+class ThreadPool
+  : public MeyersSingleton<ThreadPool<Tag>>
+  //  : public ResettableSingleton<ThreadPool<Tag>>
+  , public ThreadPoolBase<Tag>
 {
-  //  friend class Singleton<ThreadPool<Tag>>;
+  friend class MeyersSingleton<ThreadPool<Tag>>;
 
-  // protected:
+protected:
 public:
-  ThreadPool();
-  ~ThreadPool();
+  ThreadPool() = default;
+  ~ThreadPool() = default;
 
-public:
-  ThreadPool(const ThreadPool&) = delete;
-  ThreadPool& operator=(const ThreadPool&) = delete;
-
-  size_t NThreadsGet() const;
+  template <typename Func, typename... Args>
+  auto SubmitDefault(Func&& func, Args&&... args, void* key);
 
   template <typename Func, typename... Args>
   requires std::invocable<Func, Args...>
-  auto submit(Func&& func, Args&&... args);
-
-private:
-  class IThreadTask
+  auto Submit(Func&& func, Args&&... args, void* key)
   {
-  public:
-    virtual ~IThreadTask() = default;
-    virtual void Execute() = 0;
-  };
+    return ThreadPoolTraits<Tag>::Submit(
+      *this, std::forward<Func>(func), std::forward<Args>(args)..., key);
+  }
 
-  template <typename F>
-  class ThreadTask : public IThreadTask
-  {
-  public:
-    explicit ThreadTask(F&& func)
-      : m_func(std::move(func))
-    {
-    }
-    void Execute() override { m_func(); }
+  void Worker() { ThreadPoolTraits<Tag>::WorkerLoop(*this); }
 
-  private:
-    F m_func;
-  };
-
-  template <typename T>
-  class TaskFuture
-  {
-  public:
-    explicit TaskFuture(std::future<T>&& fut)
-      : m_future(std::move(fut))
-      , m_detach(false)
-    {
-    }
-
-    TaskFuture(TaskFuture&&) noexcept = default;
-    TaskFuture& operator=(TaskFuture&&) noexcept = default;
-
-    T Get() { return m_future.get(); }
-    void Detach() { m_detach = true; }
-
-    ~TaskFuture()
-    {
-      if (m_future.valid() && !m_detach)
-        m_future.get();
-    }
-
-  private:
-    std::future<T> m_future;
-    bool m_detach;
-  };
-
-  void worker();
-  void destroy();
-
-  std::atomic_flag m_done = ATOMIC_FLAG_INIT;
-  std::mutex m_mutex;
-  std::condition_variable m_condition;
-  std::vector<std::unique_ptr<IThreadTask>> m_queue;
-  std::vector<std::thread> m_threads;
+  using ThreadPoolBase<Tag>::DefaultSubmit;
+  using ThreadPoolBase<Tag>::DefaultWorkerLoop;
 };
 
-#ifndef PBB_HEADER_ONLY
-extern template class ThreadPool<Tags::DefaultPool>; // Instantiate explicitly if needed
-#endif
-} // namespace sps::thread
+} // namespace PBB::Thread
 
-#include "ThreadPool.inl" // Submit is inline/templated
-#include "ThreadPool.txx" // Always included for header-only
+#include <PBB/ThreadPool.inl>
+#include <PBB/ThreadPool.txx>

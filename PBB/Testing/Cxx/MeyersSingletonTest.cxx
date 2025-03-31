@@ -21,7 +21,7 @@ private:
     m_float = 2.0f;
     m_heapFloat = new float;
   }
-  ~Test()
+  ~Test() override
   {
     std::cout << "Destroyed\n";
     delete m_heapFloat;

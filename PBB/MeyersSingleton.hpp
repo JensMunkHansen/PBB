@@ -15,6 +15,7 @@ public:
     static T instance;
     return instance;
   }
+  static T* InstancePtrGet() { return &InstanceGet(); }
 
 protected:
   MeyersSingleton() = default;

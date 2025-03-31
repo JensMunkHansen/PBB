@@ -4,6 +4,14 @@
 #error "This header requires at least C++11"
 #endif
 
+// Double-checked locking with std::atomic<T*>
+
+// Manual destruction with atexit or __attribute__((destructor))
+
+// Fully reentrant, lazy, and leak-safe
+
+// Compatible with types that might be resurrected after destruction (i.e. phoenix behavior)
+
 // Macro for registering destructor - in case compiler doesn't support attributes on templates
 #define REGISTER_SINGLETON_DESTRUCTOR(Type, Priority)                                              \
   __attribute__((destructor(Priority))) static void DestroyPhoenixSingleton_##Type()               \
@@ -49,6 +57,17 @@ public:
     }
     return -1;
   }
+
+  static bool IsAlive() { return g_instance.load(std::memory_order_acquire) != nullptr; }
+
+#ifdef PBB_ENABLE_TEST_SINGLETON
+  static void ResetForTest()
+  {
+    InstanceDestroy();
+  }
+#else
+  static void ResetForTest() = delete; // or static_assert(false)
+#endif
 
 protected:
   PhoenixSingleton() = default;

@@ -1,0 +1,4 @@
+// This file is auto-generated, please do not modify
+
+#cmakedefine PBB_HEADER_ONLY
+#cmakedefine PBB_USE_TBB_MAP
