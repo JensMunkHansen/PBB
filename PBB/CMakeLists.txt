@@ -4,7 +4,9 @@ include(spsExportHeader)
 set(TARGET_NAME PBB)
 add_library(${TARGET_NAME} ${PBB_LIB_TYPE})
 
-generate_export_header(${TARGET_NAME})
+if(NOT PBB_HEADER_ONLY)
+  generate_export_header(${TARGET_NAME})
+endif()
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.h.in ${CMAKE_CURRENT_BINARY_DIR}/Config.h @ONLY)
 
 # TODO: Use BUILD_INTERFACE and INSTALL_INTERFACE (more flexible) 
