@@ -37,13 +37,15 @@ public:
   template <typename>
   friend struct ThreadPoolTraits;
 
+  size_t NThreadsGet() const;
+
 protected:
   using TaskPtr = std::unique_ptr<IThreadTask>;
 
 #ifdef PBB_USE_TBB_QUEUE
-  using QueueImpl = tbb::concurrent_queue<TaskPtr>;
+  using QueueImpl = tbb::concurrent_queue<std::pair<TaskPtr, void*>>;
 #else
-  using QueueImpl = PBB::MRMWQueue<TaskPtr>;
+  using QueueImpl = PBB::MRMWQueue<std::pair<TaskPtr, void*>>;
 #endif
 
   ThreadPoolBase();
@@ -51,8 +53,6 @@ protected:
   explicit ThreadPoolBase(std::size_t numThreads);
 
   ~ThreadPoolBase();
-
-  size_t NThreadsGet() const;
 
   void Destroy();
 
@@ -69,7 +69,7 @@ protected:
   {
     while (!m_done.test(std::memory_order_acquire))
     {
-      std::unique_ptr<IThreadTask> pTask{ nullptr };
+      std::pair<std::unique_ptr<IThreadTask>, void*> pTask{ nullptr, nullptr };
 
 #ifdef PBB_USE_TBB_QUEUE
       {
@@ -96,7 +96,7 @@ protected:
         // At this point we assume there's work available.
         // Try to get a task from the queue — it's possible another
         // thread beat us to it, so this may still fail.
-        if (!m_workQueue.try_pop(pTask) || !pTask)
+        if (!m_workQueue.try_pop(pTask) || !pTask.first)
           continue;
       }
 #else
@@ -113,18 +113,18 @@ protected:
           continue;
         }
       }
-      if (!pTask)
+      if (!pTask.first)
       {
         // Dummy task
         continue;
       }
 #endif
-      pTask->Execute();
+      pTask.first->Execute();
     }
   }
 
   template <typename Func, typename... Args>
-  auto DefaultSubmit(Func&& func, Args&&... args);
+  auto DefaultSubmit(Func&& func, Args&&... args, void* key = nullptr);
 };
 
 } // namespace PBB::Thread

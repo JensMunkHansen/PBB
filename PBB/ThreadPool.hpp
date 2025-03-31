@@ -44,14 +44,14 @@ public:
   ~ThreadPool() = default;
 
   template <typename Func, typename... Args>
-  auto SubmitDefault(Func&& func, Args&&... args);
+  auto SubmitDefault(Func&& func, Args&&... args, void* key);
 
   template <typename Func, typename... Args>
   requires std::invocable<Func, Args...>
-  auto Submit(Func&& func, Args&&... args)
+  auto Submit(Func&& func, Args&&... args, void* key)
   {
     return ThreadPoolTraits<Tag>::Submit(
-      *this, std::forward<Func>(func), std::forward<Args>(args)...);
+      *this, std::forward<Func>(func), std::forward<Args>(args)..., key);
   }
 
   void Worker() { ThreadPoolTraits<Tag>::WorkerLoop(*this); }

@@ -4,14 +4,14 @@ namespace PBB::Thread {
 
 template <typename Tag>
 template <typename Func, typename... Args>
-auto ThreadPool<Tag>::SubmitDefault(Func&& func, Args&&... args)
+auto ThreadPool<Tag>::SubmitDefault(Func&& func, Args&&... args, void* key)
 {
   return this->template DefaultSubmit(std::forward<Func>(func), std::forward<Args>(args)...);
 }
 
 template <typename Tag>
 template <typename Func, typename... Args>
-auto ThreadPoolBase<Tag>::DefaultSubmit(Func&& func, Args&&... args)
+auto ThreadPoolBase<Tag>::DefaultSubmit(Func&& func, Args&&... args, void* key)
 {
   static_assert(std::invocable<Func, Args...>, "Submitted task must be invocable with given args");
 
@@ -36,13 +36,13 @@ auto ThreadPoolBase<Tag>::DefaultSubmit(Func&& func, Args&&... args)
   TaskFuture<ResultType> result{ task.get_future() };
 
 #ifdef PBB_USE_TBB_QUEUE
-  m_workQueue.push(std::make_unique<TaskType>(std::move(task)));
+  m_workQueue.push(std::make_pair(std::make_unique<TaskType>(std::move(task)), key));
   {
     std::lock_guard lock(m_mutex);
     m_condition.notify_one();
   }
 #else
-  m_workQueue.Push(std::make_unique<TaskType>(std::move(task)));
+  m_workQueue.Push(std::make_pair(std::make_unique<TaskType>(std::move(task)), key));
 #endif
   return result;
 }
