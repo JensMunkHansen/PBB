@@ -1,10 +1,10 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <chrono>
+#include <sstream>
 #include <thread>
 #include <unordered_set>
 
-#include <PBB/FakeThreadPool.hpp>
 #include <PBB/ThreadPool.hpp>
 #include <PBB/ThreadPoolCustom.hpp>
 
