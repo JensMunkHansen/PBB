@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include <chrono>
 #include <sstream>
@@ -193,5 +194,88 @@ TEST_CASE("ThreadPool_With_Initialize", "[ThreadPool]")
   }
 
   REQUIRE(func.UniqueInitializeCount() == func.UniqueOperatorCallCount());
+  pool.RemoveInitialize(call_key);
+}
+
+TEST_CASE("Promise_Throws_When_SetException_Called", "[SanityCheck]")
+{
+  std::promise<void> promise;
+  std::future<void> future = promise.get_future();
+
+  promise.set_exception(std::make_exception_ptr(std::runtime_error("test fail")));
+
+  bool caught = false;
+  try
+  {
+    future.get();
+  }
+  catch (const std::exception& e)
+  {
+    caught = true;
+    REQUIRE(std::string(e.what()) == "test fail");
+  }
+
+  REQUIRE(caught);
+}
+#if 1
+TEST_CASE("RuntimeErrorSanity")
+{
+  try
+  {
+    throw std::runtime_error("Initialization failed!");
+  }
+  catch (const std::exception& e)
+  {
+    std::cerr << "[Sanity] Caught: " << typeid(e).name() << ", what(): " << e.what() << "\n";
+    REQUIRE_THAT(e.what(), Catch::Matchers::StartsWith("Initialization failed"));
+  }
+}
+#endif
+
+TEST_CASE("ThreadPool_InitializeExceptionIsPropagated", "[ThreadPool]")
+{
+  struct Dummy
+  {
+  };
+  Dummy dummy;
+  void* call_key = static_cast<void*>(&dummy);
+
+  auto& pool = ThreadPool<Tags::CustomPool>::InstanceGet();
+
+  pool.RegisterInitialize(call_key,
+    []
+    {
+      std::cerr << "[Test] Throwing from Initialize()\n";
+      throw std::runtime_error("Initialization failed!");
+    });
+
+  auto future = pool.Submit([] { FAIL("Task should not run when init fails"); }, call_key);
+
+  future.Detach(); // Prevent get() in destructor
+
+  bool got_expected_exception = false;
+  bool correct_type = false;
+
+  try
+  {
+    future.Get();
+    FAIL("Expected exception from Get(), but none was thrown");
+  }
+  catch (const std::exception& e)
+  {
+    std::cerr << "[Test] Caught exception: " << typeid(e).name() << ", what(): " << e.what()
+              << "\n";
+
+    // Check that it is a std::runtime_error exactly
+    correct_type = dynamic_cast<const std::runtime_error*>(&e) != nullptr;
+    got_expected_exception = std::string(e.what()) == "Initialization failed!";
+  }
+  catch (...)
+  {
+    FAIL("Caught unexpected exception type");
+  }
+
+  REQUIRE(got_expected_exception);
+  REQUIRE(correct_type);
   pool.RemoveInitialize(call_key);
 }

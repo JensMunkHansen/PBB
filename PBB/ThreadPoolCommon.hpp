@@ -1,6 +1,7 @@
 #pragma once
 
 #include <future>
+#include <iostream>
 #include <memory>
 #include <utility>
 
@@ -13,6 +14,7 @@ class IThreadTask
 public:
   virtual ~IThreadTask() = default;
   virtual void Execute() = 0;
+  virtual void OnInitializeFailure(const std::exception& e){};
 
 protected:
   IThreadTask() = default;
@@ -33,7 +35,7 @@ public:
   {
   }
 
-  void Execute() override final { m_func(); }
+  void Execute() final { m_func(); }
 
 private:
   Func m_func;
@@ -77,5 +79,28 @@ private:
   std::future<T> m_future;
   FuturePolicy m_policy;
 };
+
+#if 1
+template <typename Func, typename Promise>
+class InitAwareTask : public ThreadTask<Func>
+{
+public:
+  using Base = ThreadTask<Func>;
+
+  InitAwareTask(Func&& func, std::shared_ptr<Promise> promise)
+    : Base(std::move(func))
+    , m_promise(std::move(promise))
+  {
+  }
+
+  void OnInitializeFailure(const std::exception& /*unused*/) override
+  {
+    m_promise->set_exception(std::current_exception());
+  }
+
+private:
+  std::shared_ptr<Promise> m_promise;
+};
+#endif
 
 } // namespace PBB::Thread
