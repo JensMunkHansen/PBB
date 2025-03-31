@@ -3,7 +3,9 @@
 #include <chrono>
 #include <thread>
 
+#include <PBB/FakeThreadPool.hpp>
 #include <PBB/ThreadPool.hpp>
+#include <PBB/ThreadPoolCustom.hpp>
 
 using namespace PBB::Thread;
 namespace
@@ -106,4 +108,11 @@ TEST_CASE("ThreadPool_No_Starvation_Detached", "[ThreadPool]")
 
   REQUIRE(longTaskExecuted == 1);
   REQUIRE(shortTaskExecuted == 1);
+}
+
+TEST_CASE("ThreadPool_With_Initialize", "[ThreadPool]")
+{
+  auto& pool = PBB::FakeThreadPool::InstanceGet();
+  pool.Reset();
+  //  auto& myPool = ThreadPool<Tags::CustomPool>::InstanceGet();
 }

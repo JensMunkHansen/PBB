@@ -19,10 +19,16 @@ target_sources(${TARGET_NAME}
       MeyersSingleton.hpp        
       MRMWQueue.hpp
       ParallelFor.hpp
+      ThreadPoolCommon.hpp
+      ThreadPoolTraits.hpp
+      ThreadPoolTags.hpp
+      ThreadPoolBase.hpp
       ThreadPool.hpp
+      ThreadPoolCustom.hpp
       ThreadPool.inl
       ThreadPool.txx
-      ThreadLocal.hpp
+#      ThreadPool.hpp
+#      ThreadLocal.hpp
   PRIVATE
 )
 

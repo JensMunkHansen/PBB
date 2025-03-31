@@ -1,12 +1,20 @@
 #pragma once
 
-namespace PBB::Thread
-{
+namespace PBB::Thread {
+
 template <typename Tag>
 template <typename Func, typename... Args>
-requires std::invocable<Func, Args...>
-auto ThreadPool<Tag>::Submit(Func&& func, Args&&... args)
+auto ThreadPool<Tag>::SubmitDefault(Func&& func, Args&&... args)
 {
+  return this->template DefaultSubmit(std::forward<Func>(func), std::forward<Args>(args)...);
+}
+
+template <typename Tag>
+template <typename Func, typename... Args>
+auto ThreadPoolBase<Tag>::DefaultSubmit(Func&& func, Args&&... args)
+{
+  static_assert(std::invocable<Func, Args...>, "Submitted task must be invocable with given args");
+
   using ResultType = std::invoke_result_t<Func, Args...>;
   using PackagedTask = std::packaged_task<ResultType()>;
   using TaskType = ThreadTask<PackagedTask>;
@@ -40,3 +48,4 @@ auto ThreadPool<Tag>::Submit(Func&& func, Args&&... args)
 }
 
 } // namespace PBB::Thread
+

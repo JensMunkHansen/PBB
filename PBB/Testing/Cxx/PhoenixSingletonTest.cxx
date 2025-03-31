@@ -45,10 +45,18 @@ private:
 };
 }
 
-TEST_CASE("PhoenixSingleton_instantiation", "[PhoenixSingleton]")
+TEST_CASE("PhoenixSingleton_Instantiation", "[PhoenixSingleton]")
 {
   Test* test = Test::InstanceGet();
   TTest<float>* ttest = TTest<float>::InstanceGet();
+
+  REQUIRE(true); // placeholder
+}
+
+TEST_CASE("PhoenixSingleton_CreateAndDestroy", "[PhoenixSingleton]")
+{
+  Test* test = Test::InstanceGet();
+  test->InstanceDestroy();
 
   REQUIRE(true); // placeholder
 }

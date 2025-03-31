@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ThreadPoolBase.hpp"
-#include "ThreadPoolTraits.hpp"
+#include <PBB/ThreadPoolBase.hpp>
+#include <PBB/ThreadPoolTraits.hpp>
 
 namespace PBB::Thread
 {

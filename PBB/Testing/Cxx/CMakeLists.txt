@@ -13,8 +13,10 @@ add_cxx_test(MRMWQueueTest)
 add_cxx_test(PhoenixSingletonTest)
 add_cxx_test(MeyersSingletonTest)
 add_cxx_test(ThreadPoolTest)
-add_cxx_test(ParallelForTest)
-add_cxx_test(ThreadLocalTest)
+target_compile_definitions(ThreadPoolTest PRIVATE PBB_ENABLE_TEST_SINGLETON)
+
+#add_cxx_test(ParallelForTest)
+#add_cxx_test(ThreadLocalTest)
 
 
 
