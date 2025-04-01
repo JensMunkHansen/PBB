@@ -1,7 +1,7 @@
 include(GenerateExportHeader)
 
 set(TARGET_NAME PBB)
-add_library(${TARGET_NAME} ${PBB_LIB_TYPE})
+add_library(${TARGET_NAME} ${PBB_LIBRARY_TYPE})
 
 if(NOT PBB_HEADER_ONLY)
   generate_export_header(${TARGET_NAME})
