@@ -145,4 +145,6 @@ export(EXPORT ${TARGET_NAME}Targets
 # If CMAKE_EXPORT_PACKAGE_REGISTRY == 0, this does nothing (default) 
 export(PACKAGE ${TARGET_NAME})
 
-add_subdirectory(Testing/Cxx)
+if (BUILD_TESTING)
+  add_subdirectory(Testing/Cxx)
+endif()

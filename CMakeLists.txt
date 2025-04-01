@@ -33,6 +33,7 @@ endif()
 
 # TODO: Move installers up to this dir, set runtime binary dir
 option(BUILD_EXAMPLES "Build examples consuming the library" ON)
+option(BUILD_TESTING "Build testing" ON)
 
 add_library(build INTERFACE)
 add_library(PBB::build ALIAS build)
