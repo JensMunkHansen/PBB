@@ -38,7 +38,8 @@ target_sources(${TARGET_NAME}
     FILE_SET generated_headers
     TYPE HEADERS
     BASE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/..
-    FILES ${CMAKE_CURRENT_BINARY_DIR}/../PBB/Config.h
+    FILES
+      ${CMAKE_CURRENT_BINARY_DIR}/../PBB/Config.h
 )
 
 # If shared or static lib, include explicit instantiation and a
@@ -56,20 +57,21 @@ if(NOT PBB_HEADER_ONLY)
       ThreadPoolSingleton.cxx
       ThreadPool.cxx
   )
-  target_link_libraries(${TARGET_NAME} PUBLIC build)
+  target_link_libraries(${TARGET_NAME} PUBLIC PBB::build)
   if (WIN32 AND BUILD_SHARED_LIBS)
     target_sources(${TARGET_NAME}
       PRIVATE
         WinDllMain.cxx)
   endif()
 else()
-  target_link_libraries(${TARGET_NAME} INTERFACE build)
+  target_link_libraries(${TARGET_NAME} INTERFACE PBB::build)
 endif()
 
 # Some IDE's have poor support for FILE_SET
 target_include_directories(${TARGET_NAME}
   INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
@@ -91,7 +93,7 @@ endif()
 
 # Define your exports: If we had binaries they will get exported. Other
 # targets in the solution can use them
-install(TARGETS ${TARGET_NAME} build 
+install(TARGETS PBB build 
     EXPORT ${TARGET_NAME}Targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Runtime
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Development
@@ -103,6 +105,11 @@ install(TARGETS ${TARGET_NAME} build
     PRIVATE_HEADER COMPONENT Development
     BUNDLE DESTINATION bin COMPONENT Runtime
 )  
+
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/pbb_export.h
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/PBB
+  COMPONENT ${PROJECT_NAME}_Devel)
 
 # Both build and install tree
 include(CMakePackageConfigHelpers)
@@ -123,7 +130,9 @@ install(
     "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}ConfigVersion.cmake" # Already created
     "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}Config.cmake"        # Already created
   DESTINATION
-    ${CMAKE_INSTALL_LIBDIR}/cmake/${TARGET_NAME})                   # Install tree
+    ${CMAKE_INSTALL_LIBDIR}/cmake/${TARGET_NAME}
+  COMPONENT Development
+  )                   # Install tree
 
 # Generate export targets for the build
 export(EXPORT ${TARGET_NAME}Targets

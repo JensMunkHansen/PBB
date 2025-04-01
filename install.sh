@@ -14,5 +14,5 @@ bear_execute() {
     $BEAR_CMD "$1"
 }
 
-cmake --preset linux -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DBUILD_SHARED_LIBS=ON -DPBB_HEADER_ONLY=OFF
+cmake --preset linux -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DPBB_LIBRARY_TYPE=SHARED
 cmake --build build/linux --config Release --target install
