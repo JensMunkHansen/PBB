@@ -14,8 +14,8 @@ add_cxx_test(PhoenixSingletonTest)
 add_cxx_test(MeyersSingletonTest)
 add_cxx_test(ThreadPoolTest)
 
-#add_cxx_test(ParallelForTest)
-#add_cxx_test(ThreadLocalTest)
+add_cxx_test(ParallelForTest)
+add_cxx_test(ThreadLocalTest)
 
 
 

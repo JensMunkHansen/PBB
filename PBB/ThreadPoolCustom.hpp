@@ -23,7 +23,7 @@ class ThreadPool<Tags::CustomPool>
   friend struct ThreadPoolTraits;
 
 protected:
-  ThreadPool() {}
+  ThreadPool() = default;
   ~ThreadPool() override = default;
 
   void Destroy();

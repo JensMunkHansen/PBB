@@ -1,5 +1,5 @@
 #include <PBB/DetectionTraits.hpp>
-#include <PBB/ThreadPool.hpp>
+#include <PBB/ThreadPoolCustom.hpp>
 
 #include <iostream>
 #include <limits>
@@ -54,7 +54,7 @@ inline void PrintNestedException(const std::exception& e, int level = 0)
  * address of functor and inside Worker, check if Initialize() has
  * been called and it now call it.
  */
-template <typename PoolTag = Tags::DefaultPool, typename Functor>
+template <typename PoolTag = Tags::CustomPool, typename Functor>
 int ParallelFor(
   int begin, int end, Functor& func, size_t nChunks = std::numeric_limits<std::size_t>::max())
 {
@@ -62,7 +62,14 @@ int ParallelFor(
   auto& pool = ThreadPool<PoolTag>::InstanceGet();
   const size_t num_threads = std::min(pool.NThreadsGet(), nChunks);
   std::cout << "Number of threads: " << num_threads << std::endl;
-  std::vector<ThreadPool<Tags::DefaultPool>::TaskFuture<void>> futures;
+
+  void* callKey = static_cast<void*>(&func);
+  if constexpr (has_initialize_v<Functor>)
+  {
+    pool.RegisterInitialize(callKey, [&func] { func.Initialize(); });
+  }
+
+  std::vector<TaskFuture<void>> futures;
 
   int total = end - begin;
   int chunk_size = (total + num_threads - 1) / num_threads;
@@ -74,35 +81,14 @@ int ParallelFor(
 
     if (chunk_begin < chunk_end)
     {
-      // Compose the function outside the thread pool
-      auto composed = [chunk_begin, chunk_end, &func]()
-      {
-        try
-        {
-          if constexpr (has_initialize_v<Functor>)
-          {
-            func.Initialize(); // per-thread init
-          }
-          func(chunk_begin, chunk_end);
-        }
-        catch (...)
-        {
-          std::ostringstream oss;
-          oss << "Exception in worker thread " << std::this_thread::get_id()
-              << " while processing range [" << chunk_begin << ", " << chunk_end << ")";
-          std::throw_with_nested(std::runtime_error(oss.str()));
-        }
-      };
-
+      auto fut = pool.Submit(
+        [chunk_begin, chunk_end, &func]() -> void { func(chunk_begin, chunk_end); }, callKey);
       // Submit the composed callable
-      futures.emplace_back(std::move(pool.Submit(std::move(composed))));
+      futures.emplace_back(std::move(fut));
     }
   }
 
   std::vector<std::exception_ptr> errors;
-
-  std::atomic_thread_fence(std::memory_order_seq_cst);
-
   for (auto& fut : futures)
   {
     try
@@ -142,12 +128,12 @@ int ParallelFor(
 }
 } // namespace detail
 
-// Expose with default pool
+// Expose with custom pool
 template <typename Functor>
 int ParallelFor(
   int begin, int end, Functor&& func, size_t nThreads = std::numeric_limits<std::size_t>::max())
 {
-  return detail::ParallelFor<Thread::Tags::DefaultPool>(
+  return detail::ParallelFor<Thread::Tags::CustomPool>(
     begin, end, std::forward<Functor>(func), nThreads);
 }
 
