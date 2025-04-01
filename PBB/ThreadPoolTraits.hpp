@@ -153,7 +153,7 @@ This combo	Makes your code memory-safe, exception-safe, and crash-free ✅
   {
     using ResultType = std::invoke_result_t<Func, Args...>;
     using Promise = std::promise<ResultType>;
-    using Future = PBB::Thread::TaskFuture<ResultType>;
+    using Future = TaskFuture<ResultType>;
 
     auto promise = std::make_shared<Promise>();
     auto future = Future{ promise->get_future() };
@@ -183,7 +183,7 @@ This combo	Makes your code memory-safe, exception-safe, and crash-free ✅
       }
     };
 
-    using Task = PBB::Thread::InitAwareTask<decltype(wrapped), Promise>;
+    using Task = InitAwareTask<decltype(wrapped), Promise>;
     auto task = std::make_unique<Task>(std::move(wrapped), std::move(promise));
     self.m_workQueue.Push(std::make_pair(std::move(task), key));
 
@@ -195,7 +195,7 @@ This combo	Makes your code memory-safe, exception-safe, and crash-free ✅
   {
     using ResultType = std::invoke_result_t<Func, Args...>;
     using Promise = std::promise<ResultType>;
-    using Future = PBB::Thread::TaskFuture<ResultType>;
+    using Future = TaskFuture<ResultType>;
 
     auto promise = std::make_shared<Promise>();
     auto future = Future{ promise->get_future() };
@@ -227,12 +227,12 @@ This combo	Makes your code memory-safe, exception-safe, and crash-free ✅
     };
 
     // Exception-aware task
-    struct InitAwareTask : PBB::Thread::ThreadTask<decltype(wrapped)>
+    struct InitAwareTask : ThreadTask<decltype(wrapped)>
     {
       std::shared_ptr<Promise> promise;
 
       InitAwareTask(decltype(wrapped)&& f, std::shared_ptr<Promise> p)
-        : PBB::Thread::ThreadTask<decltype(wrapped)>(std::move(f))
+        : ThreadTask<decltype(wrapped)>(std::move(f))
         , promise(std::move(p))
       {
       }
