@@ -36,6 +36,6 @@ for libconfig in "${libconfigs[@]}"; do
 
   for config in "${configs[@]}"; do
       bear_execute "cmake --build build/$name --config $config"
-      ctest --preset core-test --test-dir $(pwd)/build/$name -C $config
+      ctest --test-dir $(pwd)/build/$name -C $config
   done
 done
