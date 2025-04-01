@@ -274,7 +274,7 @@ public:
 // ----------------- Expose the Most Recent Implementation in `PBB::detail` -----------------
 namespace detail
 {
-#if __cplusplus >= 202002L
+#if __cplusplus >= 202002L && (!defined(__GNUC__) || (__GNUC__ > 11))
 using namespace detail::v20; // Default to latest implementation in C++20+
 #else
 using namespace detail::v17; // Default to C++17 implementation otherwise
