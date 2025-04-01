@@ -125,6 +125,8 @@ install(
   EXPORT ${TARGET_NAME}Targets
   NAMESPACE PBB::
   DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${TARGET_NAME}) # Install
+
+# Install the CMake files
 install(
   FILES
     "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}ConfigVersion.cmake" # Already created
@@ -132,7 +134,7 @@ install(
   DESTINATION
     ${CMAKE_INSTALL_LIBDIR}/cmake/${TARGET_NAME}
   COMPONENT Development
-  )                   # Install tree
+)
 
 # Generate export targets for the build
 export(EXPORT ${TARGET_NAME}Targets
