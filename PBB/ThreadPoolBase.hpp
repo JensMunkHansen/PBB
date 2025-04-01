@@ -54,6 +54,9 @@ protected:
 
   ~ThreadPoolBase();
 
+  /**
+   * Invalidates the queue and joins all running threads.
+   */
   void Destroy();
 
   std::atomic_flag m_done = ATOMIC_FLAG_INIT;
@@ -65,6 +68,12 @@ protected:
   std::condition_variable m_condition;
 #endif
 
+  /**
+   * Default worker loop using explicit conditional wait when using
+   * TBB queue.
+   *
+   * TODO: Consider adding a trait without conditionals and yielding.
+   */
   void DefaultWorkerLoop()
   {
     while (!m_done.test(std::memory_order_acquire))
@@ -88,8 +97,6 @@ protected:
         // - We could have been woken by notify_all during shutdown
         // - A spurious wakeup may have occurred
         // - The queue could be empty even if we were notified
-
-        // Canonical way to handle shutdown
         if (m_done.test(std::memory_order_acquire))
           break;
 
@@ -100,11 +107,12 @@ protected:
           continue;
       }
 #else
-      // Blocking queue handles its own wait logic
+      // The MRMWQueue handles its own wait logic
       if (!m_workQueue.Pop(pTask))
       {
         if (m_done.test(std::memory_order_acquire))
         {
+          // We are done
           break;
         }
         else

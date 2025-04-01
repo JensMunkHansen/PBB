@@ -33,7 +33,6 @@ namespace PBB::Thread
 template <typename Tag>
 class ThreadPool
   : public MeyersSingleton<ThreadPool<Tag>>
-  //  : public ResettableSingleton<ThreadPool<Tag>>
   , public ThreadPoolBase<Tag>
 {
   friend class MeyersSingleton<ThreadPool<Tag>>;

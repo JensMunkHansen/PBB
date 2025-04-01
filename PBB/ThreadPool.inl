@@ -19,6 +19,7 @@ auto ThreadPoolBase<Tag>::DefaultSubmit(Func&& func, Args&&... args, void* key)
   using PackagedTask = std::packaged_task<ResultType()>;
   using TaskType = ThreadTask<PackagedTask>;
 
+  // Lambda are faster than using std::bind (but code more ugly)
   auto boundLambda = [f = std::forward<Func>(func),
                        ... a = std::forward<Args>(args)]() mutable -> ResultType
   {

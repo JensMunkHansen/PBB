@@ -1,14 +1,16 @@
 #pragma once
 
 #include <future>
-#include <iostream>
 #include <memory>
 #include <utility>
 
 namespace PBB::Thread
 {
 
-// Base class for all thread pool tasks
+//! Thread task interface
+/*!
+  Abstract interface for thread task.
+ */
 class IThreadTask
 {
 public:
@@ -20,21 +22,39 @@ protected:
   IThreadTask() = default;
 
 private:
+  /**
+     Ensure that derived classes must be non-copyable or assignable.
+   */
   IThreadTask(const IThreadTask&) = delete;
   IThreadTask& operator=(const IThreadTask&) = delete;
 };
 
-// Template wrapper for move-constructible callables
+//! Thread task
+/*!
+ * Thread task implementation.
+ *
+ * Template wrapper for move-constructible callables
+ */
 template <typename Func>
 requires std::is_move_constructible_v<Func>
 class ThreadTask : public IThreadTask
 {
 public:
+  /**
+   * Construct thread task (we don't allow implicit conversion of func)
+   *
+   * @param func
+   *
+   */
   explicit ThreadTask(Func&& func)
     : m_func(std::move(func))
   {
   }
 
+  /**
+   * Function executed by thread
+   *
+   */
   void Execute() final { m_func(); }
 
 private:
@@ -47,7 +67,11 @@ enum class FuturePolicy
   Detach
 };
 
-// TaskFuture wrapper for fire-and-forget or normal usage
+//! Task future
+/*! Simple wrapper around std::future. The behavoir of futures
+ * returned from std::async is added. The object will block and
+ * wait for completion unless, detach is called.
+ */
 template <typename T>
 class TaskFuture
 {
@@ -64,13 +88,24 @@ public:
   TaskFuture(const TaskFuture&) = delete;
   TaskFuture& operator=(const TaskFuture&) = delete;
 
+  /**
+   * Get the std::future to wait for. Deduced return types
+   * available using c++14
+   *
+   * @return
+   */
   T Get() { return m_future.get(); }
   void Detach() { m_policy = FuturePolicy::Detach; }
 
+  /**
+   * Destructor
+   *
+   */
   ~TaskFuture()
   {
     if (m_future.valid() && m_policy == FuturePolicy::Wait)
     {
+      // Block if not detached
       m_future.get();
     }
   }
@@ -80,7 +115,10 @@ private:
   FuturePolicy m_policy;
 };
 
-#if 1
+//! InitAwareTask
+/*! Extension of @ref ThreadTask with a shared promise to track
+ * potential exceptions thrown during initialization.
+ */
 template <typename Func, typename Promise>
 class InitAwareTask : public ThreadTask<Func>
 {
@@ -93,6 +131,7 @@ public:
   {
   }
 
+  // Store last exception inside the promise
   void OnInitializeFailure(const std::exception& /*unused*/) override
   {
     m_promise->set_exception(std::current_exception());
@@ -101,6 +140,5 @@ public:
 private:
   std::shared_ptr<Promise> m_promise;
 };
-#endif
 
 } // namespace PBB::Thread

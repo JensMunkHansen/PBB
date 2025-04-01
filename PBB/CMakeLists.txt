@@ -29,8 +29,7 @@ target_sources(${TARGET_NAME}
       ThreadPoolCustom.hpp
       ThreadPool.inl
       ThreadPool.txx
-#      ThreadPool.hpp
-#      ThreadLocal.hpp
+      ThreadLocal.hpp
   PRIVATE
 )
 
@@ -63,6 +62,13 @@ if(NOT PBB_HEADER_ONLY)
         WinDllMain.cxx)
   endif()
 endif()
+
+target_include_directories(${TARGET_NAME}
+  INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
+  
 
 # Add compile definition for headers to switch between inline/non-inline
 #target_compile_definitions(${TARGET_NAME}

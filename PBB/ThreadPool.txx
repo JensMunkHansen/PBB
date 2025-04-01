@@ -1,8 +1,16 @@
+#pragma once
+
 #include <PBB/ThreadPool.hpp>
+#include <PBB/ThreadPoolBase.hpp>
 
 namespace PBB::Thread
 {
 
+/**
+ * Destryoy
+ *
+ * Invalidates the queue and joins all running threads.
+ */
 template <typename Tag>
 void ThreadPoolBase<Tag>::Destroy()
 {
@@ -26,12 +34,22 @@ void ThreadPoolBase<Tag>::Destroy()
   }
 }
 
+/**
+ * Constructor
+ *
+ * Always create at least one thread. If hardware_concurrency() returns 0,
+ * subtracting one would turn it to UINT_MAX, so get the maximum of
+ * hardware_concurrency() and 2 before subtracting 1.
+ */
 template <typename Tag>
 ThreadPoolBase<Tag>::ThreadPoolBase()
-  : ThreadPoolBase(std::max(2u, std::thread::hardware_concurrency() + 1u) - 1u)
+  : ThreadPoolBase(std::max(2u, std::thread::hardware_concurrency()) - 1u)
 {
 }
 
+/**
+ * Constructor. No implicit conversion allowed
+ */
 template <typename Tag>
 ThreadPoolBase<Tag>::ThreadPoolBase(std::size_t numThreads)
 {

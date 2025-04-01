@@ -5,10 +5,15 @@
 #include <shared_mutex>
 #include <utility>
 
+#include <PBB/ThreadPoolBase.hpp>
+#include <PBB/ThreadPoolTags.hpp>
 namespace PBB::Thread
 {
 
-// Default pool
+//! ThreadPoolTraits
+/*! Traits for specializing functionality for submitting tasks and the
+    worker loop. This is the default behavior
+ */
 template <typename Tag>
 struct ThreadPoolTraits
 {
@@ -21,14 +26,18 @@ struct ThreadPoolTraits
   }
 };
 
+//! ThreadPoolTraits<CustomPool>
+/*! Specialization of the worker loop to handle a per-thread
+    initialization function.
+ */
 template <>
 struct ThreadPoolTraits<Tags::CustomPool>
 {
   static void WorkerLoop(auto& self)
   {
     thread_local bool initialized = false;
-    thread_local void* init_key = nullptr;
-    thread_local std::any init_result; // Store return value of `Initialize()` if any.
+    thread_local void* init_key = nullptr; // Unique key for a group of tasks
+    thread_local std::any init_result;     // Hold result of a potential initialization function
 
     while (!self.m_done.test(std::memory_order_acquire))
     {
@@ -37,6 +46,7 @@ struct ThreadPoolTraits<Tags::CustomPool>
       {
         if (init_key != pTask.second)
         {
+          // Reset an earlier initialization result
           initialized = false;
           init_key = pTask.second;
           init_result.reset();
@@ -46,6 +56,7 @@ struct ThreadPoolTraits<Tags::CustomPool>
         {
           std::function<void()> initTask = nullptr;
           {
+            // Locate the initialization function
             std::shared_lock lock(self.m_initTasksMutex);
             auto it = self.m_initTasks.find(pTask.second);
             if (it != self.m_initTasks.end())
@@ -56,6 +67,8 @@ struct ThreadPoolTraits<Tags::CustomPool>
 
           if (initTask)
           {
+            // Execute the initialization function and handle any
+            // exception thrown
             try
             {
               initTask();
@@ -65,6 +78,7 @@ struct ThreadPoolTraits<Tags::CustomPool>
             {
               if (pTask.first)
               {
+                // We have to rethrow to get the right exception
                 try
                 {
                   std::rethrow_exception(std::current_exception());
@@ -74,17 +88,17 @@ struct ThreadPoolTraits<Tags::CustomPool>
                   pTask.first->OnInitializeFailure(e);
                 }
               }
-              continue; // ✅ Skip Execute
+              continue; // Skip Execute
             }
           }
           else
           {
-            // ✅ No initTask found — do NOT execute!
+            // No initTask found — just continue
             continue;
           }
         }
 
-        // ✅ Only run if successfully initialized
+        // Always execute - unless initialization failed.
         pTask.first->Execute();
       }
     }
@@ -185,65 +199,6 @@ This combo	Makes your code memory-safe, exception-safe, and crash-free ✅
 
     using Task = InitAwareTask<decltype(wrapped), Promise>;
     auto task = std::make_unique<Task>(std::move(wrapped), std::move(promise));
-    self.m_workQueue.Push(std::make_pair(std::move(task), key));
-
-    return future;
-  }
-#else
-  template <typename Func, typename... Args>
-  static auto Submit(auto& self, Func&& func, Args&&... args, void* key)
-  {
-    using ResultType = std::invoke_result_t<Func, Args...>;
-    using Promise = std::promise<ResultType>;
-    using Future = TaskFuture<ResultType>;
-
-    auto promise = std::make_shared<Promise>();
-    auto future = Future{ promise->get_future() };
-    auto weak_promise = std::weak_ptr<Promise>(promise);
-
-    // Use direct lambda capture instead of bind
-    auto wrapped =
-      [func = std::forward<Func>(func), ... args = std::forward<Args>(args), weak_promise]() mutable
-    {
-      try
-      {
-        if constexpr (std::is_void_v<ResultType>)
-        {
-          std::invoke(std::move(func), std::move(args)...);
-          if (auto p = weak_promise.lock())
-            p->set_value();
-        }
-        else
-        {
-          if (auto p = weak_promise.lock())
-            p->set_value(std::invoke(std::move(func), std::move(args)...));
-        }
-      }
-      catch (...)
-      {
-        if (auto p = weak_promise.lock())
-          p->set_exception(std::current_exception());
-      }
-    };
-
-    // Exception-aware task
-    struct InitAwareTask : ThreadTask<decltype(wrapped)>
-    {
-      std::shared_ptr<Promise> promise;
-
-      InitAwareTask(decltype(wrapped)&& f, std::shared_ptr<Promise> p)
-        : ThreadTask<decltype(wrapped)>(std::move(f))
-        , promise(std::move(p))
-      {
-      }
-
-      void OnInitializeFailure(const std::exception& /*unused*/) override
-      {
-        promise->set_exception(std::current_exception());
-      }
-    };
-
-    auto task = std::make_unique<InitAwareTask>(std::move(wrapped), std::move(promise));
     self.m_workQueue.Push(std::make_pair(std::move(task), key));
 
     return future;

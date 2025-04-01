@@ -7,7 +7,7 @@
 
 namespace
 {
-static void thread_push(void* arg)
+static void ThreadPush(void* arg)
 {
   auto pQueue = static_cast<PBB::MRMWQueue<float>*>(arg);
   for (size_t i = 0; i < 100; i++)
@@ -17,7 +17,7 @@ static void thread_push(void* arg)
   }
 }
 
-static void thread_try_pop(void* arg)
+static void ThreadTryPop(void* arg)
 {
   auto pQueue = static_cast<PBB::MRMWQueue<float>*>(arg);
   float value = 0.0f;
@@ -44,11 +44,11 @@ TEST_CASE("MRMWQueue_copyable", "[MRMWQueue]")
 TEST_CASE("MRMWQueue_Push_Pop", "[MRMWQueue]")
 {
   PBB::MRMWQueue<float> queue;
-  std::thread first(thread_push, static_cast<void*>(&queue));
+  std::thread first(ThreadPush, static_cast<void*>(&queue));
   std::this_thread::sleep_for(std::chrono::milliseconds{ 10 });
   first.join();
 
-  std::thread second(thread_try_pop, static_cast<void*>(&queue));
+  std::thread second(ThreadTryPop, static_cast<void*>(&queue));
   second.join();
   REQUIRE(true); // placeholder
 }
