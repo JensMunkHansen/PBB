@@ -29,7 +29,7 @@ cmake_dependent_option(
 )
 
 # TODO: Move installers up to this dir, set runtime binary dir
-option(BUILD_EXAMPLES "Build examples consuming the library" OFF)
+option(BUILD_EXAMPLES "Build examples consuming the library" ON)
 
 add_library(build INTERFACE)
 
@@ -55,6 +55,11 @@ enable_testing()
 find_package(TBB QUIET)
 if (TBB_Found)
   set(TBB_LIBRARIES /opt/intel/oneapi/tbb/2022.0/lib/libtbb.so)
+endif()
+
+if (NOT DEFINED pbb_cmake_build_dir)
+  set(pbb_cmake_build_dir
+    ${CMAKE_INSTALL_LIBDIR}/cmake/${TARGET_NAME})
 endif()
 
 add_subdirectory(PBB)

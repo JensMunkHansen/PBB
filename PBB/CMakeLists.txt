@@ -101,7 +101,7 @@ install(TARGETS ${TARGET_NAME} build
     ${LIBRARY_HEADERS_INSTALL_ARG}      
     FRAMEWORK COMPONENT Runtime # MacOS (.so and lib)
     PRIVATE_HEADER COMPONENT Development
-    BUNDLE DESTINATION bin COMPOENENT Runtime
+    BUNDLE DESTINATION bin COMPONENT Runtime
 )  
 
 # Both build and install tree
@@ -110,7 +110,7 @@ configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_NAME}Config.cmake.in"      # Input
     "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}Config.cmake"         # Build tree
     INSTALL_DESTINATION
-      ${CMAKE_INSTALL_LIBDIR}/cmake/${TARGET_NAME} # Install tree
+      ${CMAKE_INSTALL_LIBDIR}/cmake/${TARGET_NAME}                   # Install tree
 )
 
 # For the install tree (can be skipped completely)

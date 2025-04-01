@@ -15,7 +15,7 @@ if (PBB_BINARY_DIR)
                 "-Dexample_dir=${dir}"
                 "-Dbuild_type=${CMAKE_BUILD_TYPE}"
                 "-Dshared=${BUILD_SHARED_LIBS}"
-                "-DPBB_dir=${PBB_BINARY_DIR}/PBB"
+                "-Dpbb_dir=${PBB_BINARY_DIR}/PBB"
                 "-Dctest=${CMAKE_CTEST_COMMAND}"
                 "-Dplatform=${CMAKE_GENERATOR_PLATFORM}"
                 "-Dtoolset=${CMAKE_GENERATOR_TOOLSET}"

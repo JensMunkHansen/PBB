@@ -5,4 +5,4 @@ project(PBBLinuxUsage
 
 find_package(PBB REQUIRED)
 add_executable(PBBLinuxUsage main.cxx)
-target_link_libraries(PBBLinuxUsage PRIVATE PBB)
+target_link_libraries(PBBLinuxUsage PRIVATE PBB::PBB)
