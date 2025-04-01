@@ -24,6 +24,31 @@ set(CMAKE_CXX_EXTENSIONS OFF)  # Use -std=c++20 instead of -std=gnu++20
 add_library(build INTERFACE)
 
 include(spsCompilerPlatformFlags)
+
+# TODO: Add this to your spsCompilerPlatformSupport
+include(CheckCXXSourceCompiles)
+
+check_cxx_source_compiles("
+  #include <memory>
+  #include <atomic>
+
+  void test() {
+    std::shared_ptr<int> ptr = std::make_shared<int>(42);
+    std::atomic<std::shared_ptr<int>> atomic_ptr(ptr);
+  }
+
+  int main() {
+    test();
+    return 0;
+  }
+" PBB_ATOMIC_SHARED_PTR)
+
+if(PBB_ATOMIC_SHARED_PTR)
+  message(STATUS "Compiler supports std::atomic<std::shared_ptr<T>>")
+else()
+  message(WARNING "Compiler does NOT support std::atomic<std::shared_ptr<T>>")
+endif()
+
 include(spsAsan)
 include(spsInstallDirs)
 include(spsConfig)
