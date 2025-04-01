@@ -1,12 +1,22 @@
 cmake_minimum_required(VERSION 3.28...3.31)
 
 project(PBB
+  VERSION 1.0.0
   LANGUAGES
   C CXX)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
+
 include(CMakeDependentOption)
-include(GenerateExportHeader)
+
+# On Windows, this is store in the registry. On other platforms,
+# inside $HOME/.cmake/packages
+option(${PROJECT_NAME}_EXPORT_TO_PACKAGE_REGISTRY "Export installation to package registry" OFF)
+
+# Enable writing to registry
+if (${PROJECT_NAME}_EXPORT_TO_PACKAGE_REGISTRY)
+  set(CMAKE_EXPORT_PACKAGE_REGISTRY 1)
+endif()
 
 option(PBB_HEADER_ONLY "Build as header-only library" ON)
 
@@ -18,16 +28,16 @@ cmake_dependent_option(
   OFF
 )
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)  # Use -std=c++20 instead of -std=gnu++20
+# TODO: Move installers up to this dir, set runtime binary dir
+option(BUILD_EXAMPLES "Build examples consuming the library" OFF)
+
 add_library(build INTERFACE)
 
 include(spsCompilerPlatformFlags)
-include(spsCompilerPlatformSupport)
 include(spsAsan)
 include(spsInstallDirs)
 include(spsConfig)
+include(spsCompilerPlatformSupport)
 
 if(PBB_HEADER_ONLY)
   set(PBB_LIB_TYPE INTERFACE)
@@ -74,3 +84,6 @@ configure_file(
   "${PBB_BINARY_DIR}/.clang-tidy"
   COPYONLY)
 
+if (BUILD_EXAMPLES)
+  add_subdirectory(Examples)
+endif()
