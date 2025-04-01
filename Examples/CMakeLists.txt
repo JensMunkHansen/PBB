@@ -4,7 +4,7 @@ project(PBBExamples)
 if (PBB_BINARY_DIR)
   message("Examples tested from ${PBB_BINARY_DIR}")
   function (add_example dir)
-    if (1)
+    if (1) # pbb_binary_dir (TODO: Define stuff in top-level
       add_test(
         NAME    "PBBExample-${dir}"
         COMMAND "${CMAKE_COMMAND}"
