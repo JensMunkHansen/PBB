@@ -3,6 +3,7 @@ include(GenerateExportHeader)
 set(TARGET_NAME PBB)
 add_library(${TARGET_NAME} ${PBB_LIBRARY_TYPE})
 
+# === Export header for non-header only build ===
 if(NOT PBB_HEADER_ONLY)
   generate_export_header(${TARGET_NAME})
 endif()
@@ -18,18 +19,18 @@ target_sources(${TARGET_NAME}
       ${CMAKE_CURRENT_SOURCE_DIR}/..
     FILES
       Memory.hpp
+      ThreadLocal.hpp
       MeyersSingleton.hpp        
       MRMWQueue.hpp
       ParallelFor.hpp
-      ThreadPoolCommon.hpp
-      ThreadPoolTags.hpp
-      ThreadPoolBase.hpp
       ThreadPool.hpp
-      ThreadPoolTraits.hpp
+      ThreadPoolBase.hpp
+      ThreadPoolCommon.hpp
       ThreadPoolCustom.hpp
+      ThreadPoolTags.hpp
+      ThreadPoolTraits.hpp
       ThreadPool.inl
       ThreadPool.txx
-      ThreadLocal.hpp
   PRIVATE
 )
 
@@ -42,8 +43,8 @@ target_sources(${TARGET_NAME}
       ${CMAKE_CURRENT_BINARY_DIR}/../PBB/Config.h
 )
 
-# If shared or static lib, include explicit instantiation and a
-# Phoenix singleton
+# TODO: If shared or static lib, include explicit instantiation and a
+# Phoenix singleton instead of the Meyers singleton
 if(NOT PBB_HEADER_ONLY)
   target_sources(${TARGET_NAME}
     PUBLIC
@@ -75,8 +76,9 @@ target_include_directories(${TARGET_NAME}
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-# For both build and install tree. Needed for other libraries to use
-# find_package(SPSFunction)
+# === Needed for other libraries to use find_package(PBB) ===
+
+# For both build and install tree. 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
   "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}ConfigVersion.cmake"
@@ -84,6 +86,7 @@ write_basic_package_version_file(
   COMPATIBILITY AnyNewerVersion
 )
 
+# === Adiitional header present in the library version ===
 set(LIBRARY_HEADERS_INSTALL_ARG "")
 if(NOT PBB_HDR_ONLY)
   set(LIBRARY_HEADERS_INSTALL_ARG
@@ -91,8 +94,6 @@ if(NOT PBB_HDR_ONLY)
   )
 endif()
 
-# Define your exports: If we had binaries they will get exported. Other
-# targets in the solution can use them
 install(TARGETS PBB build 
     EXPORT ${TARGET_NAME}Targets
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT Runtime
@@ -103,8 +104,8 @@ install(TARGETS PBB build
     ${LIBRARY_HEADERS_INSTALL_ARG}      
     FRAMEWORK COMPONENT Runtime # MacOS (.so and lib)
     PRIVATE_HEADER COMPONENT Development
-    BUNDLE DESTINATION bin COMPONENT Runtime
-)  
+    BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime
+)
 
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/pbb_export.h
