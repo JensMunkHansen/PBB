@@ -21,15 +21,15 @@ libconfigs=(
 #  "Shared:-DPBB_LIBRARY_TYPE=SHARED"
 )
 
-configs=("Release"
-         "Debug"
-         "Asan")
+configs=(
+    "Release"
+    #"Debug"
+    #"Asan"
+)
 
-compilers=("clang:clang++"
-           "gcc:g++")
-
-compilers=("clang:clang++")
-configs=("Release")
+compilers=(
+    #"clang:clang++"
+    "gcc:g++")
 
 
 if [ -d "$HOME/tspkg/ArtifactoryInstall/Linux/Release/lib/cmake/Catch2" ]; then

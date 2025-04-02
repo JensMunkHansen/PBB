@@ -1,6 +1,7 @@
 #pragma once
 
 #include <any>
+#include <exception>
 #include <iostream>
 #include <shared_mutex>
 #include <utility>
@@ -79,6 +80,7 @@ struct ThreadPoolTraits<Tags::CustomPool>
                             if (pTask.first)
                             {
                                 // We have to rethrow to get the right exception
+#if 0
                                 try
                                 {
                                     std::rethrow_exception(std::current_exception());
@@ -87,6 +89,9 @@ struct ThreadPoolTraits<Tags::CustomPool>
                                 {
                                     pTask.first->OnInitializeFailure(e);
                                 }
+#else
+                                pTask.first->OnInitializeFailure(std::current_exception());
+#endif
                             }
                             continue; // Skip Execute
                         }
@@ -105,59 +110,6 @@ struct ThreadPoolTraits<Tags::CustomPool>
     }
 
 #if 1
-
-    /*
-  Great question — let's unpack this clearly and with intent. The use of
-  std::shared_ptr<std::promise<T>> and std::weak_ptr<std::promise<T>> is a subtle but powerful
-  pattern that gives us:
-
-  ✅ Safe and correct control of the promise's lifetime
-  ✅ Protection from double .set_value() / .set_exception()
-  ✅ Exception-safe and memory-safe Submit() + Initialize() behavior
-
-  We store the promise in two places:
-
-  Inside the lambda that runs the actual task.
-
-  Inside the task object (like InitAwareTask) that handles OnInitializeFailure().
-
-  So we need shared ownership of the promise — hence shared_ptr.
-
-  This way:
-
-  Both the execution path and the error path can safely access and set the promise.
-
-  The promise lives as long as either the task body or the failure handler needs it.
-
-
-  Why std::weak_ptr<Promise> in the lambda?
-  We capture a weak_ptr inside the lambda to avoid keeping the promise alive unnecessarily if:
-
-  Initialization fails (and OnInitializeFailure() already sets the exception)
-
-  The lambda is never executed (e.g., skipped due to continue;)
-
-  The task is canceled or dropped
-
-  Then in the lambda:
-
-  if (auto p = weak_promise.lock()) {
-    p->set_value(...);
-  }
-  This ensures that:
-
-  The lambda only sets the promise if it's still valid
-
-  We avoid double-setting, which would cause a crash (std::future_error)
-
-  The lambda is totally safe, even if skipped or run late
-
-  shared_ptr	Allows Submit() and InitAwareTask to own and set the promise
-  weak_ptr	Lets the lambda access the promise if still valid without extending lifetime
-  lock()	Prevents set_value() or set_exception() on an already-completed/destroyed promise
-  This combo	Makes your code memory-safe, exception-safe, and crash-free ✅
-
-     */
 
     template <typename Func, typename... Args>
     static auto Submit(auto& self, Func&& func, Args&&... args, void* key)
@@ -196,6 +148,8 @@ struct ThreadPoolTraits<Tags::CustomPool>
 
         using Task = InitAwareTask<decltype(wrapped), Promise>;
         auto task = std::make_unique<Task>(std::move(wrapped), std::move(promise));
+        // auto task = std::make_unique<Task>(wrapped, promise);
+
         self.m_workQueue.Push(std::make_pair(std::move(task), key));
 
         return future;
@@ -204,6 +158,59 @@ struct ThreadPoolTraits<Tags::CustomPool>
 };
 
 } // namespace PBB::Thread
+
+/*
+Great question — let's unpack this clearly and with intent. The use of
+std::shared_ptr<std::promise<T>> and std::weak_ptr<std::promise<T>> is a subtle but powerful
+pattern that gives us:
+
+✅ Safe and correct control of the promise's lifetime
+✅ Protection from double .set_value() / .set_exception()
+✅ Exception-safe and memory-safe Submit() + Initialize() behavior
+
+We store the promise in two places:
+
+Inside the lambda that runs the actual task.
+
+Inside the task object (like InitAwareTask) that handles OnInitializeFailure().
+
+So we need shared ownership of the promise — hence shared_ptr.
+
+This way:
+
+Both the execution path and the error path can safely access and set the promise.
+
+The promise lives as long as either the task body or the failure handler needs it.
+
+
+Why std::weak_ptr<Promise> in the lambda?
+We capture a weak_ptr inside the lambda to avoid keeping the promise alive unnecessarily if:
+
+Initialization fails (and OnInitializeFailure() already sets the exception)
+
+The lambda is never executed (e.g., skipped due to continue;)
+
+The task is canceled or dropped
+
+Then in the lambda:
+
+if (auto p = weak_promise.lock()) {
+p->set_value(...);
+}
+This ensures that:
+
+The lambda only sets the promise if it's still valid
+
+We avoid double-setting, which would cause a crash (std::future_error)
+
+The lambda is totally safe, even if skipped or run late
+
+shared_ptr	Allows Submit() and InitAwareTask to own and set the promise
+weak_ptr	Lets the lambda access the promise if still valid without extending lifetime
+lock()	Prevents set_value() or set_exception() on an already-completed/destroyed promise
+This combo	Makes your code memory-safe, exception-safe, and crash-free ✅
+
+ */
 
 // ASAN_OPTIONS=detect_leaks=1 ./your_app
 // -fsanitize=address -g
