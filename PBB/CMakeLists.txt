@@ -51,7 +51,7 @@ if(NOT PBB_HEADER_ONLY)
       TYPE HEADERS
       BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/..
       FILES
-        ThreadPoolSingleton.hpp
+        ThreadPoolSingleton.h
     PRIVATE
       PhoenixSingleton.hpp        
       ThreadPoolSingleton.cxx

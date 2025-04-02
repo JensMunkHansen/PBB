@@ -2,7 +2,7 @@
 
 #ifndef PBB_HEADER_ONLY
 // We need export declarations - only for shared libs
-#include <PBB/ThreadPoolSingleton.hpp>
+#include <PBB/ThreadPoolSingleton.h>
 #endif
 
 #include <PBB/MRMWQueue.hpp>

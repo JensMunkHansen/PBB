@@ -1,6 +1,6 @@
 #include <PBB/pbb_export.h>
 
-#include <PBB/ThreadPoolSingleton.hpp>
+#include <PBB/ThreadPoolSingleton.h>
 
 namespace PBB::Thread
 {
