@@ -16,9 +16,9 @@ bear_execute() {
 
 # Define configurations
 libconfigs=(
-  "HeaderOnly:-DBUILD_SHARED_LIBS=OFF -DPBB_HEADER_ONLY=ON"
-#  "Static:-DBUILD_SHARED_LIBS=OFF -DPBB_HEADER_ONLY=OFF"
-#  "Shared:-DBUILD_SHARED_LIBS=ON -DPBB_HEADER_ONLY=OFF"
+  "HeaderOnly:-DPBB_LIBRARY_TYPE=INTERFACE"
+#  "Static:-DPBB_LIBRARY_TYPE=STATIC"
+#  "Shared:-DPBB_LIBRARY_TYPE=SHARED"
 )
 
 configs=(

@@ -19,6 +19,8 @@ endif ()
 execute_process(
   COMMAND
     "${ctest}"
+    --build-config
+      "${config}"
     --build-generator
       "${generator}"
     --build-and-test

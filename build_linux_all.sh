@@ -28,6 +28,10 @@ configs=("Release"
 compilers=("clang:clang++"
            "gcc:g++")
 
+if [ -d "$HOME/tspkg/ArtifactoryInstall/Linux/Release/lib/cmake/Catch2" ]; then
+    Catch2_DIR="$HOME/tspkg/ArtifactoryInstall/Linux/Release/lib/cmake/Catch2"
+fi
+
 for compiler in "${compilers[@]}"; do
   IFS=":" read -r cc cxx <<< "$compiler"
   for libconfig in "${libconfigs[@]}"; do
@@ -35,7 +39,7 @@ for compiler in "${compilers[@]}"; do
     echo "==== Building $name Configuration ===="
   
     # Configure
-    bear_execute "cmake --preset linux -B $(pwd)/build/$cc/$name $cmake_args -DCMAKE_C_COMPILER=$cc -DCMAKE_CXX_COMPILER=$cxx"
+    bear_execute "cmake -G Ninja -S . -B $(pwd)/build/$cc/$name $cmake_args -DCMAKE_C_COMPILER=$cc -DCMAKE_CXX_COMPILER=$cxx"
     for config in "${configs[@]}"; do
         if [[ "$cc" == gcc && "$config" == "Asan" ]]; then
             echo "Skipping GCC with Asan: not supported"

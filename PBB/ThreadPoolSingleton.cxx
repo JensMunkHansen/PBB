@@ -1,3 +1,5 @@
+#include <PBB/pbb_export.h>
+
 #include <PBB/ThreadPoolSingleton.hpp>
 
 namespace PBB::Thread
@@ -7,9 +9,14 @@ ThreadPool<Tag>& GetThreadPoolInstance()
 {
     return ThreadPool<Tag>::InstanceGet();
 }
-
-ThreadPool<Tags::DefaultPool>& GetDefaultThreadPool()
-{
-    return GetThreadPoolInstance<Tags::DefaultPool>();
-}
 } // namespace PBB::Thread
+
+namespace PBB
+{
+PBB_EXPORT Thread::ThreadPool<Thread::Tags::DefaultPool>& GetDefaultThreadPool()
+{
+    return Thread::GetThreadPoolInstance<Thread::Tags::DefaultPool>();
+}
+}
+
+template class PBB_EXPORT PBB::Thread::ThreadPool<PBB::Thread::Tags::DefaultPool>;

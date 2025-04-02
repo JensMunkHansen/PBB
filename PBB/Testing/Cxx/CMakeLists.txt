@@ -17,6 +17,9 @@ add_cxx_test(ThreadPoolTest)
 add_cxx_test(ParallelForTest)
 add_cxx_test(ThreadLocalTest)
 
+if (BUILD_SHARED_LIBS)
+  add_cxx_test(ThreadPoolSingletonTest)
+endif()
 
 
 
