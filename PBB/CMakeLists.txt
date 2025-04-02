@@ -57,14 +57,14 @@ if(NOT PBB_HEADER_ONLY)
       ThreadPoolSingleton.cxx
       ThreadPool.cxx
   )
-  target_link_libraries(${TARGET_NAME} PUBLIC PBB::build)
+  target_link_libraries(${TARGET_NAME} PUBLIC build)
   if (WIN32 AND BUILD_SHARED_LIBS)
     target_sources(${TARGET_NAME}
       PRIVATE
         WinDllMain.cxx)
   endif()
 else()
-  target_link_libraries(${TARGET_NAME} INTERFACE PBB::build)
+  target_link_libraries(${TARGET_NAME} INTERFACE build)
 endif()
 
 # Some IDE's have poor support for FILE_SET
