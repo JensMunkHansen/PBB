@@ -19,11 +19,10 @@ jobs:
       - name: Add MSVC to PATH
         uses: ilammy/msvc-dev-cmd@v1
 
-      - name: Install dependencies (CMake + Ninja)
-        uses: lukka/get-cmake@v3
-        with:
-          cmakeVersion: latest
-          ninjaVersion: latest
+      - name: Install CMake and Ninja using Chocolatey
+        run: |
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress -y
+          choco install ninja --no-progress -y
 
       - name: Cache Catch2
         id: cache-catch2
