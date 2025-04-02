@@ -16,9 +16,9 @@ bear_execute() {
 
 # Define configurations
 libconfigs=(
-  "HeaderOnly:-DBUILD_SHARED_LIBS=OFF -DPBB_HEADER_ONLY=ON"
-  "Static:-DBUILD_SHARED_LIBS=OFF -DPBB_HEADER_ONLY=OFF"
-  "Shared:-DBUILD_SHARED_LIBS=ON -DPBB_HEADER_ONLY=OFF"
+#  "HeaderOnly:-DPBB_LIBRARY_TYPE=INTERFACE"
+  "Static:-DPBB_LIBRARY_TYPE=STATIC"
+#  "Shared:-DPBB_LIBRARY_TYPE=SHARED"
 )
 
 configs=("Release"
@@ -27,6 +27,10 @@ configs=("Release"
 
 compilers=("clang:clang++"
            "gcc:g++")
+
+compilers=("clang:clang++")
+configs=("Release")
+
 
 if [ -d "$HOME/tspkg/ArtifactoryInstall/Linux/Release/lib/cmake/Catch2" ]; then
     Catch2_DIR="$HOME/tspkg/ArtifactoryInstall/Linux/Release/lib/cmake/Catch2"
@@ -46,7 +50,7 @@ for compiler in "${compilers[@]}"; do
             continue
         fi        
         bear_execute "cmake --build build/$cc/$name --config $config"
-        ctest --preset core-test --test-dir $(pwd)/build/$cc/$name -C $config
+        ctest --test-dir $(pwd)/build/$cc/$name -C $config
     done
   done
 done

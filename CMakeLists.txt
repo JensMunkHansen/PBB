@@ -9,11 +9,9 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
 
 include(CMakeDependentOption)
 
-# On Windows, this is store in the registry. On other platforms,
+# On Windows, this is stored in the registry. On other platforms,
 # inside $HOME/.cmake/packages
 option(${PROJECT_NAME}_EXPORT_TO_PACKAGE_REGISTRY "Export installation to package registry" OFF)
-
-# Enable writing to registry
 if (${PROJECT_NAME}_EXPORT_TO_PACKAGE_REGISTRY)
   set(CMAKE_EXPORT_PACKAGE_REGISTRY 1)
 endif()
@@ -22,7 +20,7 @@ endif()
 set(${PROJECT_NAME}_LIBRARY_TYPE "INTERFACE" CACHE STRING "Library type to build: INTERFACE (header-only), STATIC, or SHARED")
 set_property(CACHE ${PROJECT_NAME}_LIBRARY_TYPE PROPERTY STRINGS INTERFACE STATIC SHARED)
 
-# Enforce BUILD_SHARED_LIBS based on PBB_LIBRARY_TYPE
+# === Enforce BUILD_SHARED_LIBS based on PBB_LIBRARY_TYPE ===
 if(${PROJECT_NAME}_LIBRARY_TYPE STREQUAL "SHARED")
   set(BUILD_SHARED_LIBS ON CACHE BOOL "Use shared libraries" FORCE)
 elseif(${PROJECT_NAME}_LIBRARY_TYPE STREQUAL "STATIC" OR ${PROJECT_NAME}_LIBRARY_TYPE STREQUAL "INTERFACE")
@@ -31,10 +29,10 @@ else()
   message(FATAL_ERROR "Invalid PBB_LIBRARY_TYPE: must be INTERFACE, STATIC, or SHARED")
 endif()
 
-# TODO: Move installers up to this dir, set runtime binary dir
 option(BUILD_EXAMPLES "Build examples consuming the library" ON)
 option(BUILD_TESTING "Build testing" ON)
 
+# === Interface target for build ===
 add_library(build INTERFACE)
 add_library(PBB::build ALIAS build)
 
@@ -50,10 +48,12 @@ else()
   set(${PROJECT_NAME}_HEADER_ONLY OFF)
 endif()
 
-include(CTest)
-find_package(Catch2 3.5.2 REQUIRED CONFIG)
-include(Catch)
-enable_testing()
+if (BUILD_TESTING)
+  include(CTest)
+  find_package(Catch2 3.5.2 REQUIRED CONFIG)
+  include(Catch)
+  enable_testing()
+endif()
 
 find_package(TBB QUIET)
 if (TBB_Found)

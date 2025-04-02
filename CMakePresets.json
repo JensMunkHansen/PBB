@@ -20,9 +20,9 @@
                 "rhs": "Linux"
             },
             "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_C_COMPILER": "clang",
-                "CMAKE_CXX_COMPILER": "clang++",
-                "MKL_DIR": "/opt/intel/oneapi/mkl/latest/lib/cmake/mkl"
+                "CMAKE_CXX_COMPILER": "clang++"
             }
         },
         {
@@ -34,6 +34,7 @@
                 "rhs": "Linux"
             },
             "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_C_COMPILER": "gcc",
                 "CMAKE_CXX_COMPILER": "g++"
             }
@@ -44,6 +45,7 @@
             "displayName": "Emscripten",
             "toolchainFile": "$env{HOME}/github/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
             "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "WASMExamples_OPTIMIZATION": "BEST",
                 "WASMExamples_COMPILE_OPTIMIZATION": "BEST",
                 "WASMExamples_DEBUG": "NONE"
