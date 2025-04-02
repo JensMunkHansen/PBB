@@ -3,11 +3,6 @@ include(GenerateExportHeader)
 set(TARGET_NAME PBB)
 add_library(${TARGET_NAME} ${PBB_LIBRARY_TYPE})
 
-message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
-message(STATUS "CMAKE_CXX_FLAGS_DEBUG: ${CMAKE_CXX_FLAGS_DEBUG}")
-get_target_property(flags build COMPILE_OPTIONS)
-message(STATUS "build COMPILE_OPTIONS: ${flags}")
-
 # === Export header for non-header only build ===
 if(NOT PBB_HEADER_ONLY)
   generate_export_header(${TARGET_NAME})
