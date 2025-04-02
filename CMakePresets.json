@@ -23,7 +23,7 @@
                 "CMAKE_C_COMPILER": "clang",
                 "CMAKE_CXX_COMPILER": "clang++",
                 "MKL_DIR": "/opt/intel/oneapi/mkl/latest/lib/cmake/mkl"
-            }        
+            }
         },
         {
             "name": "linux-gcc",
@@ -36,7 +36,7 @@
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "gcc",
                 "CMAKE_CXX_COMPILER": "g++"
-            }        
+            }
         },
         {
             "name": "wasm",
@@ -47,6 +47,19 @@
                 "WASMExamples_OPTIMIZATION": "BEST",
                 "WASMExamples_COMPILE_OPTIMIZATION": "BEST",
                 "WASMExamples_DEBUG": "NONE"
+            }
+        },
+        {
+            "name": "windows-msvc",
+            "inherits": "default",
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            },
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "cl",
+                "CMAKE_CXX_COMPILER": "cl"
             }
         }
     ],
@@ -80,6 +93,16 @@
             "name": "Asan-gcc",
             "configurePreset": "linux-gcc",
             "configuration": "Asan"
+        },
+        {
+            "name": "Debug-windows",
+            "configurePreset": "windows-msvc",
+            "configuration": "Debug"
+        },
+        {
+            "name": "Release-windows",
+            "configurePreset": "windows-msvc",
+            "configuration": "Release"
         }
     ],
     "testPresets": [
@@ -87,6 +110,14 @@
             "name": "core-test",
             "description": "Enable output on failure",
             "configurePreset": "linux",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "core-test-windows",
+            "description": "Enable output on failure",
+            "configurePreset": "windows-msvc",
             "output": {
                 "outputOnFailure": true
             }
