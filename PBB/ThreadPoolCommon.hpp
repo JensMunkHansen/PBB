@@ -16,7 +16,7 @@ class IThreadTask
   public:
     virtual ~IThreadTask() = default;
     virtual void Execute() = 0;
-    virtual void OnInitializeFailure(std::exception_ptr eptr) {}
+    virtual void OnInitializeFailure(std::exception_ptr eptr) noexcept {}
 
   protected:
     IThreadTask() = default;
@@ -132,13 +132,13 @@ class InitAwareTask : public ThreadTask<Func>
     }
 #if 0
   // Store last exception inside the promise
-  void OnInitializeFailure(const std::exception& /*unused*/) override
+  void OnInitializeFailure(const std::exception& /*unused*/) noexcept override
   {
     m_promise->set_exception(std::current_exception());
   }
 #endif
     // Store last exception inside the promise
-    void OnInitializeFailure(std::exception_ptr eptr) override
+    void OnInitializeFailure(std::exception_ptr eptr) noexcept override
     {
         m_promise->set_exception(std::move(eptr));
     }

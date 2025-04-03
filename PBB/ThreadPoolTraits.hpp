@@ -25,6 +25,10 @@ struct ThreadPoolTraits
     {
         return self.SubmitDefault(std::forward<Func>(func), std::forward<Args>(args)..., key);
     }
+    ThreadPoolTraits(const ThreadPoolTraits&) = delete;
+    ThreadPoolTraits(ThreadPoolTraits&&) = delete;
+    ThreadPoolTraits& operator=(const ThreadPoolTraits&) = delete;
+    ThreadPoolTraits& operator=(ThreadPoolTraits&&) = delete;
 };
 
 //! ThreadPoolTraits<CustomPool>
@@ -79,8 +83,8 @@ struct ThreadPoolTraits<Tags::CustomPool>
                         {
                             if (pTask.first)
                             {
-                                // We have to rethrow to get the right exception
 #if 0
+                                // We have to rethrow to get the right exception
                                 try
                                 {
                                     std::rethrow_exception(std::current_exception());

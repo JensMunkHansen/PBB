@@ -72,7 +72,7 @@ class ThreadPoolBase
      * Default worker loop using explicit conditional wait when using
      * TBB queue.
      *
-     * TODO: Consider adding a trait without conditionals and yielding.
+     * TODO: Consider adding another trait without conditionals and yielding (busy)
      */
     void DefaultWorkerLoop()
     {
