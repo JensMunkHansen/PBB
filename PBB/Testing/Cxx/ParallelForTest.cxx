@@ -182,3 +182,33 @@ TEST_CASE("ParallelFor_ThreadLocalVectors_ValidResult", "[ParallelFor]")
     PBB::ParallelFor(0, 100, func);
     REQUIRE(func.allValues.size() == 100);
 }
+
+TEST_CASE("ParallelFor_AllThreadsThrowingOperator_ErrorCodeReturned", "[ParallelFor]")
+{
+    auto func = []
+    {
+        struct
+        {
+            void Initialize() {}
+
+            void operator()(int i, int end) { throw std::runtime_error("Hello"); }
+        } f;
+        return f;
+    }();
+    REQUIRE(PBB::ParallelFor(0, 1000, func) == 1);
+}
+
+TEST_CASE("ParallelFor_AllThreadsThrowingOnInitialize_ErrorCodeReturned", "[ParallelFor]")
+{
+    auto func = []
+    {
+        struct
+        {
+            void Initialize() { throw std::runtime_error("Hello"); }
+
+            void operator()(int i, int end) {}
+        } f;
+        return f;
+    }();
+    REQUIRE(PBB::ParallelFor(0, 1000, func) == 1);
+}
