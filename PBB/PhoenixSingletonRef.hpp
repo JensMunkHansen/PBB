@@ -69,6 +69,7 @@ class PhoenixSingletonRef
         {
             std::lock_guard<std::recursive_mutex> guard(g_mutex);
             pInstance = g_instance.load(std::memory_order_relaxed);
+
             if (!pInstance)
             {
                 if constexpr (!Resurrectable)
@@ -115,7 +116,7 @@ std::atomic<T*> PhoenixSingletonRef<T, R>::g_instance{ nullptr };
 
 template <class T, bool R>
 std::recursive_mutex PhoenixSingletonRef<T, R>::g_mutex;
-}
+} // namespace PBB:detail
 
 // PBB_REGISTER_SINGLETON_DESTRUCTOR(MySingletonType, false)
 
@@ -158,7 +159,6 @@ std::recursive_mutex PhoenixSingletonRef<T, R>::g_mutex;
         (void)PBB::PhoenixSingletonRef<Type, Resurrectable>::InstanceDestroy();                    \
     }                                                                                              \
     }
-
 #else // Fallback: std::atexit
 
 #define PBB_REGISTER_SINGLETON_DESTRUCTOR(Type, Resurrectable)                                     \
