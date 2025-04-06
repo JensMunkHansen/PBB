@@ -72,8 +72,11 @@ class PhoenixSingletonRef
 
             if (!pInstance)
             {
-                if (detail::ResurrectionState<Resurrectable>::IsDestroyed())
-                    return nullptr;
+                if constexpr (!Resurrectable)
+                {
+                    if (detail::ResurrectionState<Resurrectable>::IsDestroyed())
+                        return nullptr;
+                }
 
                 pInstance = new T;
                 g_instance.store(pInstance, std::memory_order_release);
@@ -113,7 +116,6 @@ std::atomic<T*> PhoenixSingletonRef<T, R>::g_instance{ nullptr };
 
 template <class T, bool R>
 std::recursive_mutex PhoenixSingletonRef<T, R>::g_mutex;
-
 }
 
 // PBB_REGISTER_SINGLETON_DESTRUCTOR(MySingletonType, false)
