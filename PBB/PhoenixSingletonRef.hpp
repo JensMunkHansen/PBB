@@ -13,11 +13,6 @@
 // Compatible with types that might be resurrected after destruction (i.e. phoenix behavior)
 
 // Macro for registering destructor - in case compiler doesn't support attributes on templates
-#define REGISTER_SINGLETON_DESTRUCTOR(Type, Priority)                                              \
-    __attribute__((destructor(Priority))) static void DestroyPhoenixSingleton_##Type()             \
-    {                                                                                              \
-        (void)PBB::PhoenixSingleton<Type>::InstanceDestroy();                                      \
-    }
 
 #include <atomic>
 #include <cstdlib>
@@ -37,6 +32,14 @@ struct ResurrectionState<false>
     static std::atomic<bool>& Get()
     {
         static std::atomic<bool> destroyed{ false };
+
+        // Register cleanup at exit (only once)
+        static const bool registered = ([] {
+            std::atexit([] { destroyed.store(false); });
+            return true;
+          })();
+
+        (void)registered;
         return destroyed;
     }
 
@@ -113,17 +116,6 @@ std::recursive_mutex PhoenixSingletonRef<T, R>::g_mutex;
 
 }
 
-#define PBB_REGISTER_SINGLETON_DESTRUCTOR(Type, Resurrectable)                                     \
-    namespace                                                                                      \
-    {                                                                                              \
-    [[maybe_unused]] static auto _ForceSingletonRefDestroy_##Type =                                \
-      &PBB::PhoenixSingletonRef<Type, Resurrectable>::InstanceDestroy;                             \
-    __attribute__((destructor)) static void _AutoDestroySingleton_##Type()                         \
-    {                                                                                              \
-        (void)PBB::PhoenixSingletonRef<Type, Resurrectable>::InstanceDestroy();                    \
-    }                                                                                              \
-    }
-
 // PBB_REGISTER_SINGLETON_DESTRUCTOR(MySingletonType, false)
 
 // .cxx
@@ -131,59 +123,58 @@ std::recursive_mutex PhoenixSingletonRef<T, R>::g_mutex;
 // const int force_destroy_MySingletonType = PBB::PhoenixSingleton<MySingletonType,
 // false>::InstanceDestroy();
 
+// Helper to concatenate tokens for unique naming
+#define PBB_CONCAT_IMPL(x, y) x##y
+#define PBB_CONCAT(x, y) PBB_CONCAT_IMPL(x, y)
+
 #if defined(_MSC_VER)
 
-// ✅ MSVC: Use static object whose destructor calls InstanceDestroy()
 #define PBB_REGISTER_SINGLETON_DESTRUCTOR(Type, Resurrectable)                                     \
     namespace                                                                                      \
     {                                                                                              \
-    struct PBB_SingletonAutoDestroy_##Type                                                         \
+    struct PBB_CONCAT(SingletonAutoDestroy_, __LINE__)                                             \
     {                                                                                              \
-        ~PBB_SingletonAutoDestroy_##Type()                                                         \
+        ~PBB_CONCAT(SingletonAutoDestroy_, __LINE__)()                                             \
         {                                                                                          \
-            (void)PBB::PhoenixSingleton<Type, Resurrectable>::InstanceDestroy();                   \
+            (void)PBB::PhoenixSingletonRef<Type, Resurrectable>::InstanceDestroy();                \
         }                                                                                          \
     };                                                                                             \
-    [[maybe_unused]] static PBB_SingletonAutoDestroy_##Type _autoDestroy_##Type;                   \
-    [[maybe_unused]] static auto _forceInstanceDestroy_##Type =                                    \
-      &PBB::PhoenixSingleton<Type, Resurrectable>::InstanceDestroy;                                \
+    [[maybe_unused]] static PBB_CONCAT(SingletonAutoDestroy_, __LINE__)                            \
+      PBB_CONCAT(_singletonAutoDestroy_, __LINE__){};                                              \
+    [[maybe_unused]] static auto PBB_CONCAT(_forceInstanceDestroy_,                                \
+      __LINE__) = &PBB::PhoenixSingletonRef<Type, Resurrectable>::InstanceDestroy;                 \
     }
 
 #elif defined(__GNUC__) || defined(__clang__)
 
-// ✅ GCC/Clang: Use `__attribute__((destructor))`
 #define PBB_REGISTER_SINGLETON_DESTRUCTOR(Type, Resurrectable)                                     \
     namespace                                                                                      \
     {                                                                                              \
-    [[maybe_unused]] static auto _forceInstanceDestroy_##Type =                                    \
-      &PBB::PhoenixSingleton<Type, Resurrectable>::InstanceDestroy;                                \
-    __attribute__((destructor)) static void PBB_AutoDestroy_##Type()                               \
+    [[maybe_unused]] static auto PBB_CONCAT(_forceInstanceDestroy_,                                \
+      __LINE__) = &PBB::PhoenixSingletonRef<Type, Resurrectable>::InstanceDestroy;                 \
+    __attribute__((destructor)) static void PBB_CONCAT(SingletonDestructor_, __LINE__)()           \
     {                                                                                              \
-        (void)PBB::PhoenixSingleton<Type, Resurrectable>::InstanceDestroy();                       \
+        (void)PBB::PhoenixSingletonRef<Type, Resurrectable>::InstanceDestroy();                    \
     }                                                                                              \
     }
 
-#else
+#else // Fallback: std::atexit
 
-// ✅ Fallback: Use `std::atexit()`
 #define PBB_REGISTER_SINGLETON_DESTRUCTOR(Type, Resurrectable)                                     \
     namespace                                                                                      \
     {                                                                                              \
-    struct PBB_SingletonAutoDestroy_##Type                                                         \
+    struct PBB_CONCAT(SingletonAutoDestroy_, __LINE__)                                             \
     {                                                                                              \
-        PBB_SingletonAutoDestroy_##Type()                                                          \
+        PBB_CONCAT(SingletonAutoDestroy_, __LINE__)()                                              \
         {                                                                                          \
             std::atexit(                                                                           \
-              [] { (void)PBB::PhoenixSingleton<Type, Resurrectable>::InstanceDestroy(); });        \
+              [] { (void)PBB::PhoenixSingletonRef<Type, Resurrectable>::InstanceDestroy(); });     \
         }                                                                                          \
     };                                                                                             \
-    [[maybe_unused]] static PBB_SingletonAutoDestroy_##Type _autoDestroy_##Type;                   \
-    [[maybe_unused]] static auto _forceInstanceDestroy_##Type =                                    \
-      &PBB::PhoenixSingleton<Type, Resurrectable>::InstanceDestroy;                                \
+    [[maybe_unused]] static PBB_CONCAT(SingletonAutoDestroy_, __LINE__)                            \
+      PBB_CONCAT(_singletonAutoDestroy_, __LINE__){};                                              \
+    [[maybe_unused]] static auto PBB_CONCAT(_forceInstanceDestroy_,                                \
+      __LINE__) = &PBB::PhoenixSingletonRef<Type, Resurrectable>::InstanceDestroy;                 \
     }
 
 #endif
-
-// PBB_REGISTER_SINGLETON_DESTRUCTOR(Test, false)
-// PBB_REGISTER_SINGLETON_DESTRUCTOR(TTest<float>, false)
-// PBB_REGISTER_SINGLETON_DESTRUCTOR(MyReloadableThing, true)

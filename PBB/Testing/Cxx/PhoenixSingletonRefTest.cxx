@@ -31,10 +31,13 @@ TEST_CASE("PhoenixSingletonRef_Instantiation", "[PhoenixSingletonRef]")
     REQUIRE(ttest.data == 0.0f);
 }
 
+PBB_REGISTER_SINGLETON_DESTRUCTOR(Test, true);
+
+PBB_REGISTER_SINGLETON_DESTRUCTOR(TTest<float>, false);
+
 TEST_CASE("PhoenixSingletonRef_CreateDestroy_Resurrectable", "[PhoenixSingletonRef]")
 {
     using RTest = PhoenixSingletonRef<Test, true>; // resurrection allowed
-
     Test& test1 = RTest::InstanceGet();
     REQUIRE(test1.value == 42);
 
