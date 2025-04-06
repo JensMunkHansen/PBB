@@ -16,19 +16,19 @@ bear_execute() {
 
 # Define configurations
 libconfigs=(
-#  "HeaderOnly:-DPBB_LIBRARY_TYPE=INTERFACE"
+  "HeaderOnly:-DPBB_LIBRARY_TYPE=INTERFACE"
   "Static:-DPBB_LIBRARY_TYPE=STATIC"
-#  "Shared:-DPBB_LIBRARY_TYPE=SHARED"
+  "Shared:-DPBB_LIBRARY_TYPE=SHARED"
 )
 
 configs=(
-    "Release"
+    #"Release"
     #"Debug"
-    #"Asan"
+    "Asan"
 )
 
 compilers=(
-    #"clang:clang++"
+    "clang:clang++"
     "gcc:g++")
 
 
@@ -45,10 +45,6 @@ for compiler in "${compilers[@]}"; do
     # Configure
     bear_execute "cmake -G Ninja -S . -B $(pwd)/build/$cc/$name $cmake_args -DCMAKE_C_COMPILER=$cc -DCMAKE_CXX_COMPILER=$cxx"
     for config in "${configs[@]}"; do
-        if [[ "$cc" == gcc && "$config" == "Asan" ]]; then
-            echo "Skipping GCC with Asan: not supported"
-            continue
-        fi        
         bear_execute "cmake --build build/$cc/$name --config $config"
         ctest --test-dir $(pwd)/build/$cc/$name -C $config
     done
