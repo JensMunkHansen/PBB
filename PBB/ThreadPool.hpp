@@ -37,17 +37,21 @@
 namespace PBB::Thread
 {
 
+#ifdef PBB_HEADER_ONLY
 template <typename Tag>
 class ThreadPool
-  :
-#ifdef PBB_HEADER_ONLY
-  public MeyersSingleton<ThreadPool<Tag>>
-#else
-  public PhoenixSingleton<ThreadPool<Tag>>
-#endif
+  : public MeyersSingleton<ThreadPool<Tag>>
   , public ThreadPoolBase<Tag>
 {
     friend class MeyersSingleton<ThreadPool<Tag>>;
+#else
+template <typename Tag>
+class ThreadPool
+  : public PhoenixSingleton<ThreadPool<Tag>>
+  , public ThreadPoolBase<Tag>
+{
+    friend class MeyersSingleton<ThreadPool<Tag>>;
+#endif
 
   protected:
   public:
@@ -65,7 +69,10 @@ class ThreadPool
           *this, std::forward<Func>(func), std::forward<Args>(args)..., key);
     }
 
-    void Worker() { ThreadPoolTraits<Tag>::WorkerLoop(*this); }
+    void Worker()
+    {
+        ThreadPoolTraits<Tag>::WorkerLoop(*this);
+    }
 
     using ThreadPoolBase<Tag>::DefaultSubmit;
     using ThreadPoolBase<Tag>::DefaultWorkerLoop;
