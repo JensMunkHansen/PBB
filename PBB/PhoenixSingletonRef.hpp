@@ -69,7 +69,6 @@ class PhoenixSingletonRef
         {
             std::lock_guard<std::recursive_mutex> guard(g_mutex);
             pInstance = g_instance.load(std::memory_order_relaxed);
-
             if (!pInstance)
             {
                 if constexpr (!Resurrectable)

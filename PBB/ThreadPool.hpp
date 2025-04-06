@@ -50,7 +50,7 @@ class ThreadPool
   : public PhoenixSingleton<ThreadPool<Tag>>
   , public ThreadPoolBase<Tag>
 {
-    friend class MeyersSingleton<ThreadPool<Tag>>;
+    friend class PhoenixSingleton<ThreadPool<Tag>>;
 #endif
 
   protected:
