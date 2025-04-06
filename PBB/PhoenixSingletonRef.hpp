@@ -183,3 +183,7 @@ std::recursive_mutex PhoenixSingletonRef<T, R>::g_mutex;
     }
 
 #endif
+
+// PBB_REGISTER_SINGLETON_DESTRUCTOR(Test, false)
+// PBB_REGISTER_SINGLETON_DESTRUCTOR(TTest<float>, false)
+// PBB_REGISTER_SINGLETON_DESTRUCTOR(MyReloadableThing, true)
