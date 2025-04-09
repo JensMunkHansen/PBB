@@ -12,11 +12,12 @@ auto ThreadPool<Tag>::SubmitDefault(Func&& func, Args&&... args, void* key)
 
 template <typename Tag>
 template <typename Func, typename... Args>
-auto ThreadPoolBase<Tag>::DefaultSubmit(Func&& func, Args&&... args, void* key)
+auto ThreadPoolBase<Tag>::DefaultSubmit(Func&& func, Args&&... args, void* key) noexcept
 {
     static_assert(
       std::invocable<Func, Args...>, "Submitted task must be invocable with given args");
-
+    static_assert(noexcept(std::invoke(std::declval<Func>(), std::declval<Args>()...)),
+      "Submitted task must be noexcept");
     using ResultType = std::invoke_result_t<Func, Args...>;
     using PackagedTask = std::packaged_task<ResultType()>;
     using TaskType = ThreadTask<PackagedTask>;

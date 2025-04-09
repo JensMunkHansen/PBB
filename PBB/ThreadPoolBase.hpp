@@ -138,7 +138,7 @@ class ThreadPoolBase
     }
 
     template <typename Func, typename... Args>
-    auto DefaultSubmit(Func&& func, Args&&... args, void* key = nullptr);
+    auto DefaultSubmit(Func&& func, Args&&... args, void* key = nullptr) noexcept;
 };
 
 } // namespace PBB::Thread
