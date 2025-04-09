@@ -17,7 +17,8 @@ int main(int argc, char* argv[])
 #ifndef PBB_HEADER_ONLY
     // Default pool exposed on API
     auto& Instance = PBB::GetDefaultThreadPool();
-    auto future = Instance.Submit([=]() -> void { std::cout << "Hello World\n"; }, nullptr);
+    auto future =
+      Instance.Submit([=]() noexcept -> void { std::cout << "Hello World\n"; }, nullptr);
     future.Get();
     std::cout << "Library usage\n";
 #endif

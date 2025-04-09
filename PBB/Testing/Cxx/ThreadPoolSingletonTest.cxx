@@ -15,7 +15,7 @@ namespace
 TEST_CASE("InstantiateAndUse", "[ThreadPoolSingleton]")
 {
     auto& Instance = PBB::GetDefaultThreadPool();
-    auto future = Instance.Submit([=]() -> void { /* Do nothing */ }, nullptr);
+    auto future = Instance.Submit([=]() noexcept -> void { /* Do nothing */ }, nullptr);
     future.Get();
     REQUIRE(true);
 }
