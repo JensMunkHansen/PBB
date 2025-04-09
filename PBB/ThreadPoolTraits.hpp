@@ -47,57 +47,69 @@ struct ThreadPoolTraits<Tags::CustomPool>
         while (!self.m_done.test(std::memory_order_acquire))
         {
             std::pair<std::unique_ptr<IThreadTask>, void*> pTask{ nullptr, nullptr };
-            if (self.m_workQueue.Pop(pTask))
+            if (!self.m_workQueue.Pop(pTask))
             {
-                if (init_key != pTask.second)
+                if (self.m_done.test(std::memory_order_acquire))
                 {
-                    // Reset an earlier initialization result
-                    initialized = false;
-                    init_key = pTask.second;
-                    init_result.reset();
+                    break;
                 }
-
-                if (!initialized)
+                else
                 {
-                    std::function<void()> initTask = nullptr;
-                    {
-                        // Locate the initialization function
-                        std::shared_lock lock(self.m_initTasksMutex);
-                        auto it = self.m_initTasks.find(pTask.second);
-                        if (it != self.m_initTasks.end())
-                        {
-                            initTask = it->second;
-                        }
-                    }
-
-                    if (initTask)
-                    {
-                        // Execute the initialization function and
-                        // handle any exception thrown
-                        try
-                        {
-                            initTask();
-                            initialized = true;
-                        }
-                        catch (...)
-                        {
-                            if (pTask.first)
-                            {
-                                pTask.first->OnInitializeFailure(std::current_exception());
-                            }
-                            continue; // Skip Execute
-                        }
-                    }
-                    else
-                    {
-                        // No initTask found — just continue
-                        continue;
-                    }
+                    continue;
                 }
-
-                // Always execute - unless initialization failed.
-                pTask.first->Execute();
             }
+            if (!pTask.first)
+            {
+                continue;
+            }
+            if (init_key != pTask.second)
+            {
+                // Reset an earlier initialization result
+                initialized = false;
+                init_key = pTask.second;
+                init_result.reset();
+            }
+
+            if (!initialized)
+            {
+                std::function<void()> initTask = nullptr;
+                {
+                    // Locate the initialization function
+                    std::shared_lock lock(self.m_initTasksMutex);
+                    auto it = self.m_initTasks.find(pTask.second);
+                    if (it != self.m_initTasks.end())
+                    {
+                        initTask = it->second;
+                    }
+                }
+
+                if (initTask)
+                {
+                    // Execute the initialization function and
+                    // handle any exception thrown
+                    try
+                    {
+                        initTask();
+                        initialized = true;
+                    }
+                    catch (...)
+                    {
+                        if (pTask.first)
+                        {
+                            pTask.first->OnInitializeFailure(std::current_exception());
+                        }
+                        continue; // Skip Execute
+                    }
+                }
+                else
+                {
+                    // No initTask found — just continue
+                    continue;
+                }
+            }
+
+            // Always execute - unless initialization failed.
+            pTask.first->Execute();
         }
     }
 
