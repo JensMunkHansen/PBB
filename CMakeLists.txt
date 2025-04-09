@@ -32,6 +32,8 @@ endif()
 option(BUILD_EXAMPLES "Build examples consuming the library" ON)
 option(BUILD_TESTING "Build testing" ON)
 option(PBB_USE_TBB_QUEUE "Use TBB queue" OFF)
+option(PBB_USE_TBB_MAP "Use TBB map" OFF)
+
 # === Interface target for build ===
 add_library(build INTERFACE)
 add_library(PBB::build ALIAS build)
@@ -56,9 +58,22 @@ if (BUILD_TESTING)
 endif()
 
 find_package(TBB QUIET)
-if (TBB_Found)
-  set(TBB_LIBRARIES /opt/intel/oneapi/tbb/2022.0/lib/libtbb.so)
+if (NOT TBB_Found)
+  set(CANDIDATE /opt/intel/oneapi/tbb/2022.1/lib/libtbb.so)
+  if (EXISTS ${CANDIDATE})
+    set(TBB_LIBRARIES ${CANDIDATE})
+    set(TBB_Found TRUE)
+  else()
+    set(TBB_Found FALSE)
+  endif()
 endif()
+
+if (NOT TBB_Found)
+  set(PBB_USE_TBB_QUEUE OFF)
+  set(PBB_USE_TBB_MAP OFF)
+endif()
+message("Using TBB Queue: ${PBB_USE_TBB_QUEUE}")
+message("Using TBB Map: ${PBB_USE_TBB_MAP}")
 
 if (NOT DEFINED pbb_cmake_build_dir)
   set(pbb_cmake_build_dir

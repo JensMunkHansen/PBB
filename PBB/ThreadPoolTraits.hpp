@@ -46,11 +46,42 @@ struct ThreadPoolTraits<Tags::CustomPool>
 
         while (!self.m_done.test(std::memory_order_acquire))
         {
-            std::pair<std::unique_ptr<IThreadTask>, void*> pTask{ nullptr, nullptr };
+            ThreadPoolBase<Tags::CustomPool>::TaskPayload pTask{ nullptr, nullptr };
+#ifdef PBB_USE_TBB_QUEUE
+            {
+                // Acquire the lock before waiting on the condition variable
+                std::unique_lock lock(self.m_mutex);
+                // Wait until either:
+                // 1. Shutdown has been requested (m_done is set), OR
+                // 2. There's work available in the queue
+                //
+                // Note: condition_variable::wait can return spuriously,
+                self.m_condition.wait(lock,
+                  [&] {
+                      return self.m_done.test(std::memory_order_acquire) ||
+                        !self.m_workQueue.empty();
+                  });
+
+                // Important: we must re-check m_done after waking up
+                // because:
+                // - We could have been woken by notify_all during shutdown
+                // - A spurious wakeup may have occurred
+                // - The queue could be empty even if we were notified
+                if (self.m_done.test(std::memory_order_acquire))
+                    break;
+
+                // At this point we assume there's work available.
+                // Try to get a task from the queue — it's possible another
+                // thread beat us to it, so this may still fail.
+                if (!self.m_workQueue.try_pop(pTask) || !pTask.first)
+                    continue;
+            }
+#else
             if (!self.m_workQueue.Pop(pTask))
             {
                 if (self.m_done.test(std::memory_order_acquire))
                 {
+                    // Facilitate that we can destroy pool
                     break;
                 }
                 else
@@ -62,6 +93,7 @@ struct ThreadPoolTraits<Tags::CustomPool>
             {
                 continue;
             }
+#endif
             if (init_key != pTask.second)
             {
                 // Reset an earlier initialization result
@@ -152,7 +184,7 @@ struct ThreadPoolTraits<Tags::CustomPool>
         auto task = std::make_unique<Task>(std::move(wrapped), std::move(promise));
         // auto task = std::make_unique<Task>(wrapped, promise);
 #ifdef PBB_USE_TBB_QUEUE
-        self.m_workQueue.push({ std::make_unique<TaskType>(std::move(task)), key });
+        self.m_workQueue.push({ std::move(task), key });
         {
             std::lock_guard lock(self.m_mutex);
             self.m_condition.notify_one();
