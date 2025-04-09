@@ -72,6 +72,7 @@ if(NOT PBB_HEADER_ONLY)
 else()
   target_link_libraries(${TARGET_NAME} INTERFACE build)
 endif()
+spsSetDebugPostfix(${TARGET_NAME} d)
 
 # Some IDE's have poor support for FILE_SET
 target_include_directories(${TARGET_NAME}

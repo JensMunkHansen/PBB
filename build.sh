@@ -22,8 +22,8 @@ libconfigs=(
 )
 
 configs=(
-    "Release"
-#    "Debug"
+#    "Release"
+    "Debug"
 #         "Asan"
 )
 

@@ -7,6 +7,7 @@ function(add_cxx_test target)
     target_link_libraries(${target} PRIVATE ${TBB_LIBRARIES})
     target_link_libraries(${target} PRIVATE ${CMAKE_THREAD_LIBS_INIT})
   endif()
+  spsSetDebugPostfix(${target} d)
 
   if (MSVC)
     foreach(tgt IN ITEMS Catch2::Catch2 Catch2::Catch2Main Catch2::Catch2WithMain)

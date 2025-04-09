@@ -34,6 +34,8 @@ option(BUILD_TESTING "Build testing" ON)
 option(PBB_USE_TBB_QUEUE "Use TBB queue" OFF)
 option(PBB_USE_TBB_MAP "Use TBB map" OFF)
 
+set(DEBUG_POSTFIX d)
+
 # === Interface target for build ===
 add_library(build INTERFACE)
 add_library(PBB::build ALIAS build)
@@ -43,6 +45,7 @@ include(spsAsan)
 include(spsInstallDirs)
 include(spsConfig)
 include(spsCompilerPlatformSupport)
+include(spsTargets)
 
 if (${PROJECT_NAME}_LIBRARY_TYPE STREQUAL "INTERFACE")
   set(${PROJECT_NAME}_HEADER_ONLY ON)

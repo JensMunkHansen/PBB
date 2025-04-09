@@ -22,9 +22,9 @@ libconfigs=(
 )
 
 configs=(
-    #"Release"
-    #"Debug"
-    "Asan"
+#    "Release"
+    "Debug"
+#    "Asan"
 )
 
 compilers=(
