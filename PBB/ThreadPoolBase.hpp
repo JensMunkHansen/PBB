@@ -41,11 +41,11 @@ class ThreadPoolBase
 
   protected:
     using TaskPtr = std::unique_ptr<IThreadTask>;
-
+    using TaskPayload = std::pair<TaskPtr, void*>;
 #ifdef PBB_USE_TBB_QUEUE
-    using QueueImpl = tbb::concurrent_queue<std::pair<TaskPtr, void*>>;
+    using QueueImpl = tbb::concurrent_queue<TaskPayload>;
 #else
-    using QueueImpl = PBB::MRMWQueue<std::pair<TaskPtr, void*>>;
+    using QueueImpl = PBB::MRMWQueue<TaskPayload>;
 #endif
 
     ThreadPoolBase();
@@ -84,7 +84,7 @@ class ThreadPoolBase
     {
         while (!m_done.test(std::memory_order_acquire))
         {
-            std::pair<std::unique_ptr<IThreadTask>, void*> pTask{ nullptr, nullptr };
+            TaskPayload pTask{ nullptr, nullptr };
 
 #ifdef PBB_USE_TBB_QUEUE
             {

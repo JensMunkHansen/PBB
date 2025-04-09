@@ -139,8 +139,15 @@ struct ThreadPoolTraits<Tags::CustomPool>
         using Task = InitAwareTask<decltype(wrapped), Promise>;
         auto task = std::make_unique<Task>(std::move(wrapped), std::move(promise));
         // auto task = std::make_unique<Task>(wrapped, promise);
-
-        self.m_workQueue.Push(std::make_pair(std::move(task), key));
+#ifdef PBB_USE_TBB_QUEUE
+        self.m_workQueue.push({ std::make_unique<TaskType>(std::move(task)), key });
+        {
+            std::lock_guard lock(self.m_mutex);
+            self.m_condition.notify_one();
+        }
+#else
+        self.m_workQueue.Push({ std::move(task), key });
+#endif
 
         return future;
     }

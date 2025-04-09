@@ -30,19 +30,21 @@ function(add_cxx_test target)
   catch_discover_tests(${target})
 endfunction()
 
-add_cxx_test(MRMWQueueTest)
-add_cxx_test(PhoenixSingletonTest)
-add_cxx_test(PhoenixSingletonRefTest)
-add_cxx_test(MeyersSingletonTest)
-add_cxx_test(ThreadPoolTest)
-
-add_cxx_test(ParallelForTest)
-add_cxx_test(ThreadLocalTest)
-
-if (BUILD_SHARED_LIBS)
-  add_cxx_test(ThreadPoolSingletonTest)
+if (PBB_USE_TBB_QUEUE)
+  add_cxx_test(ThreadPoolTest)
+else()
+  add_cxx_test(MRMWQueueTest)
+  add_cxx_test(PhoenixSingletonTest)
+  add_cxx_test(PhoenixSingletonRefTest)
+  add_cxx_test(MeyersSingletonTest)
+  
+  add_cxx_test(ParallelForTest)
+  add_cxx_test(ThreadLocalTest)
+  
+  if (BUILD_SHARED_LIBS)
+    add_cxx_test(ThreadPoolSingletonTest)
+  endif()
 endif()
-
 
 
 # inline std::shared_ptr<ThreadPool> GetThreadPoolPtr()
