@@ -16,6 +16,7 @@ auto ThreadPoolBase<Tag>::DefaultSubmit(Func&& func, Args&&... args, void* key) 
 {
     static_assert(
       std::invocable<Func, Args...>, "Submitted task must be invocable with given args");
+    // Signature for noexcept for both void and non-void return types are too clumsy
     static_assert(noexcept(std::invoke(std::declval<Func>(), std::declval<Args>()...)),
       "Submitted task must be noexcept");
     using ResultType = std::invoke_result_t<Func, Args...>;
