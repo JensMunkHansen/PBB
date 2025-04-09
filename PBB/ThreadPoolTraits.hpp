@@ -46,58 +46,102 @@ struct ThreadPoolTraits<Tags::CustomPool>
 
         while (!self.m_done.test(std::memory_order_acquire))
         {
-            std::pair<std::unique_ptr<IThreadTask>, void*> pTask{ nullptr, nullptr };
-            if (self.m_workQueue.Pop(pTask))
+            ThreadPoolBase<Tags::CustomPool>::TaskPayload pTask{ nullptr, nullptr };
+#ifdef PBB_USE_TBB_QUEUE
             {
-                if (init_key != pTask.second)
-                {
-                    // Reset an earlier initialization result
-                    initialized = false;
-                    init_key = pTask.second;
-                    init_result.reset();
-                }
+                // Acquire the lock before waiting on the condition variable
+                std::unique_lock lock(self.m_mutex);
+                // Wait until either:
+                // 1. Shutdown has been requested (m_done is set), OR
+                // 2. There's work available in the queue
+                //
+                // Note: condition_variable::wait can return spuriously,
+                self.m_condition.wait(lock,
+                  [&] {
+                      return self.m_done.test(std::memory_order_acquire) ||
+                        !self.m_workQueue.empty();
+                  });
 
-                if (!initialized)
-                {
-                    std::function<void()> initTask = nullptr;
-                    {
-                        // Locate the initialization function
-                        std::shared_lock lock(self.m_initTasksMutex);
-                        auto it = self.m_initTasks.find(pTask.second);
-                        if (it != self.m_initTasks.end())
-                        {
-                            initTask = it->second;
-                        }
-                    }
+                // Important: we must re-check m_done after waking up
+                // because:
+                // - We could have been woken by notify_all during shutdown
+                // - A spurious wakeup may have occurred
+                // - The queue could be empty even if we were notified
+                if (self.m_done.test(std::memory_order_acquire))
+                    break;
 
-                    if (initTask)
-                    {
-                        // Execute the initialization function and
-                        // handle any exception thrown
-                        try
-                        {
-                            initTask();
-                            initialized = true;
-                        }
-                        catch (...)
-                        {
-                            if (pTask.first)
-                            {
-                                pTask.first->OnInitializeFailure(std::current_exception());
-                            }
-                            continue; // Skip Execute
-                        }
-                    }
-                    else
-                    {
-                        // No initTask found — just continue
-                        continue;
-                    }
-                }
-
-                // Always execute - unless initialization failed.
-                pTask.first->Execute();
+                // At this point we assume there's work available.
+                // Try to get a task from the queue — it's possible another
+                // thread beat us to it, so this may still fail.
+                if (!self.m_workQueue.try_pop(pTask) || !pTask.first)
+                    continue;
             }
+#else
+            if (!self.m_workQueue.Pop(pTask))
+            {
+                if (self.m_done.test(std::memory_order_acquire))
+                {
+                    // Facilitate that we can destroy pool
+                    break;
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            if (!pTask.first)
+            {
+                continue;
+            }
+#endif
+            if (init_key != pTask.second)
+            {
+                // Reset an earlier initialization result
+                initialized = false;
+                init_key = pTask.second;
+                init_result.reset();
+            }
+
+            if (!initialized)
+            {
+                std::function<void()> initTask = nullptr;
+                {
+                    // Locate the initialization function
+                    std::shared_lock lock(self.m_initTasksMutex);
+                    auto it = self.m_initTasks.find(pTask.second);
+                    if (it != self.m_initTasks.end())
+                    {
+                        initTask = it->second;
+                    }
+                }
+
+                if (initTask)
+                {
+                    // Execute the initialization function and
+                    // handle any exception thrown
+                    try
+                    {
+                        initTask();
+                        initialized = true;
+                    }
+                    catch (...)
+                    {
+                        if (pTask.first)
+                        {
+                            pTask.first->OnInitializeFailure(std::current_exception());
+                        }
+                        continue; // Skip Execute
+                    }
+                }
+                else
+                {
+                    // No initTask found — just continue
+                    continue;
+                }
+            }
+
+            // Always execute - unless initialization failed.
+            pTask.first->Execute();
         }
     }
 
@@ -139,8 +183,15 @@ struct ThreadPoolTraits<Tags::CustomPool>
         using Task = InitAwareTask<decltype(wrapped), Promise>;
         auto task = std::make_unique<Task>(std::move(wrapped), std::move(promise));
         // auto task = std::make_unique<Task>(wrapped, promise);
-
-        self.m_workQueue.Push(std::make_pair(std::move(task), key));
+#ifdef PBB_USE_TBB_QUEUE
+        self.m_workQueue.push({ std::move(task), key });
+        {
+            std::lock_guard lock(self.m_mutex);
+            self.m_condition.notify_one();
+        }
+#else
+        self.m_workQueue.Push({ std::move(task), key });
+#endif
 
         return future;
     }

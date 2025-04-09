@@ -130,13 +130,6 @@ class InitAwareTask : public ThreadTask<Func>
       , m_promise(std::move(promise))
     {
     }
-#if 0
-  // Store last exception inside the promise
-  void OnInitializeFailure(const std::exception& /*unused*/) noexcept override
-  {
-    m_promise->set_exception(std::current_exception());
-  }
-#endif
     // Store last exception inside the promise
     void OnInitializeFailure(std::exception_ptr eptr) noexcept override
     {
