@@ -6,6 +6,7 @@
 #include <shared_mutex>
 #include <utility>
 
+#include <PBB/Common.hpp>
 #include <PBB/ThreadPoolBase.hpp>
 #include <PBB/ThreadPoolTags.hpp>
 namespace PBB::Thread
@@ -18,6 +19,7 @@ namespace PBB::Thread
 template <typename Tag>
 struct ThreadPoolTraits
 {
+    PBB_DELETE_CTORS(ThreadPoolTraits);
     static void WorkerLoop(auto& self) { self.DefaultWorkerLoop(); }
 
     template <typename Func, typename... Args>
@@ -25,19 +27,17 @@ struct ThreadPoolTraits
     {
         return self.SubmitDefault(std::forward<Func>(func), std::forward<Args>(args)..., key);
     }
-    ThreadPoolTraits(const ThreadPoolTraits&) = delete;
-    ThreadPoolTraits(ThreadPoolTraits&&) = delete;
-    ThreadPoolTraits& operator=(const ThreadPoolTraits&) = delete;
-    ThreadPoolTraits& operator=(ThreadPoolTraits&&) = delete;
 };
 
 //! ThreadPoolTraits<CustomPool>
-/*! Specialization of the worker loop to handle a per-thread
-    initialization function.
+/*! Specialization of the worker loop and submit functions to
+    handle a per-thread initialization function.
  */
 template <>
 struct ThreadPoolTraits<Tags::CustomPool>
 {
+    // To keep clangd silent
+    PBB_DELETE_CTORS(ThreadPoolTraits);
     static void WorkerLoop(auto& self)
     {
         thread_local bool initialized = false;
@@ -72,8 +72,8 @@ struct ThreadPoolTraits<Tags::CustomPool>
 
                     if (initTask)
                     {
-                        // Execute the initialization function and handle any
-                        // exception thrown
+                        // Execute the initialization function and
+                        // handle any exception thrown
                         try
                         {
                             initTask();
@@ -83,19 +83,7 @@ struct ThreadPoolTraits<Tags::CustomPool>
                         {
                             if (pTask.first)
                             {
-#if 0
-                                // We have to rethrow to get the right exception
-                                try
-                                {
-                                    std::rethrow_exception(std::current_exception());
-                                }
-                                catch (const std::exception& e)
-                                {
-                                    pTask.first->OnInitializeFailure(e);
-                                }
-#else
                                 pTask.first->OnInitializeFailure(std::current_exception());
-#endif
                             }
                             continue; // Skip Execute
                         }
@@ -112,8 +100,6 @@ struct ThreadPoolTraits<Tags::CustomPool>
             }
         }
     }
-
-#if 1
 
     template <typename Func, typename... Args>
     static auto Submit(auto& self, Func&& func, Args&&... args, void* key)
@@ -158,7 +144,6 @@ struct ThreadPoolTraits<Tags::CustomPool>
 
         return future;
     }
-#endif
 };
 
 } // namespace PBB::Thread

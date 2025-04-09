@@ -116,7 +116,7 @@ std::atomic<T*> PhoenixSingletonRef<T, R>::g_instance{ nullptr };
 
 template <class T, bool R>
 std::recursive_mutex PhoenixSingletonRef<T, R>::g_mutex;
-}
+} // namespace PBB:detail
 
 // PBB_REGISTER_SINGLETON_DESTRUCTOR(MySingletonType, false)
 
@@ -159,7 +159,6 @@ std::recursive_mutex PhoenixSingletonRef<T, R>::g_mutex;
         (void)PBB::PhoenixSingletonRef<Type, Resurrectable>::InstanceDestroy();                    \
     }                                                                                              \
     }
-
 #else // Fallback: std::atexit
 
 #define PBB_REGISTER_SINGLETON_DESTRUCTOR(Type, Resurrectable)                                     \

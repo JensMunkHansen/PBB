@@ -32,8 +32,8 @@ template <typename Tag>
 class ThreadPoolBase
 {
   public:
-    // Alternatively expose DoneFlag, WorkQueue, Mutex and Condition for
-    // the traits
+    // Alternatively, we can expose functions: DoneFlag, WorkQueue, Mutex and Condition to
+    // be used by @ref ThreadPoolTraits
     template <typename>
     friend struct ThreadPoolTraits;
 
@@ -54,6 +54,11 @@ class ThreadPoolBase
 
     ~ThreadPoolBase();
 
+    void Worker()
+    {
+        ThreadPoolTraits<Tag>::WorkerLoop(*this);
+    }
+
     /**
      * Invalidates the queue and joins all running threads.
      */
@@ -64,6 +69,7 @@ class ThreadPoolBase
     std::vector<std::thread> m_threads;
 
 #ifdef PBB_USE_TBB_QUEUE
+    // Intel TBB queue is thread-safe and non-blocking, we need synchronization
     std::mutex m_mutex;
     std::condition_variable m_condition;
 #endif

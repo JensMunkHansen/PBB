@@ -50,17 +50,9 @@ class ThreadPool
   : public PhoenixSingleton<ThreadPool<Tag>>
   , public ThreadPoolBase<Tag>
 {
-    friend class MeyersSingleton<ThreadPool<Tag>>;
+    friend class PhoenixSingleton<ThreadPool<Tag>>;
 #endif
-
-  protected:
   public:
-    ThreadPool() = default;
-    ~ThreadPool() = default;
-
-    template <typename Func, typename... Args>
-    auto SubmitDefault(Func&& func, Args&&... args, void* key);
-
     template <typename Func, typename... Args>
     requires std::invocable<Func, Args...>
     auto Submit(Func&& func, Args&&... args, void* key)
@@ -68,11 +60,12 @@ class ThreadPool
         return ThreadPoolTraits<Tag>::Submit(
           *this, std::forward<Func>(func), std::forward<Args>(args)..., key);
     }
+    template <typename Func, typename... Args>
+    auto SubmitDefault(Func&& func, Args&&... args, void* key);
 
-    void Worker()
-    {
-        ThreadPoolTraits<Tag>::WorkerLoop(*this);
-    }
+  protected:
+    ThreadPool() = default;
+    ~ThreadPool() = default;
 
     using ThreadPoolBase<Tag>::DefaultSubmit;
     using ThreadPoolBase<Tag>::DefaultWorkerLoop;

@@ -13,3 +13,10 @@
 #include <cassert>
 #define PBB_ASSERT(x) assert(x)
 #endif
+
+#define PBB_DELETE_CTORS(Name)                                                                     \
+    Name() = delete;                                                                               \
+    Name(const Name&) = delete;                                                                    \
+    Name(Name&&) = delete;                                                                         \
+    Name& operator=(const Name&) = delete;                                                         \
+    Name& operator=(Name&&) = delete;
