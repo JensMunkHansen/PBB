@@ -45,7 +45,7 @@ auto ThreadPoolBase<Tag>::DefaultSubmit(Func&& func, Args&&... args, void* key)
         m_condition.notify_one();
     }
 #else
-  m_workQueue.Push({std::make_pair(std::make_unique<TaskType>(std::move(task)), key});
+    m_workQueue.Push({ std::make_unique<TaskType>(std::move(task)), key });
 #endif
     return result;
 }
