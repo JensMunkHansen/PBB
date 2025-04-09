@@ -31,7 +31,7 @@ endif()
 
 option(BUILD_EXAMPLES "Build examples consuming the library" ON)
 option(BUILD_TESTING "Build testing" ON)
-
+option(PBB_USE_TBB_QUEUE "Use TBB queue" OFF)
 # === Interface target for build ===
 add_library(build INTERFACE)
 add_library(PBB::build ALIAS build)
