@@ -32,6 +32,7 @@ endfunction()
 
 add_cxx_test(MRMWQueueTest)
 add_cxx_test(PhoenixSingletonTest)
+add_cxx_test(PhoenixSingletonRefTest)
 add_cxx_test(MeyersSingletonTest)
 add_cxx_test(ThreadPoolTest)
 

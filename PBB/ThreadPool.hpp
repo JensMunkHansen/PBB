@@ -12,14 +12,21 @@
 #include <future>
 #include <memory>
 #include <mutex>
+#include <thread>
+#include <type_traits>
+#include <vector>
+
+#include <PBB/Config.h>
+#ifdef PBB_HEADER_ONLY
+#include <PBB/MeyersSingleton.hpp>
+#else
+#include <PBB/PhoenixSingleton.hpp>
+#endif
 #ifdef PBB_USE_TBB_QUEUE
 #include <tbb/concurrent_queue.h>
 #else
 #include <PBB/MRMWQueue.hpp>
 #endif
-#include <thread>
-#include <type_traits>
-#include <vector>
 
 #include <PBB/MeyersSingleton.hpp>
 #include <PBB/ResettableSingleton.hpp>
@@ -30,33 +37,45 @@
 namespace PBB::Thread
 {
 
+#ifdef PBB_HEADER_ONLY
 template <typename Tag>
 class ThreadPool
   : public MeyersSingleton<ThreadPool<Tag>>
   , public ThreadPoolBase<Tag>
 {
-  friend class MeyersSingleton<ThreadPool<Tag>>;
+    friend class MeyersSingleton<ThreadPool<Tag>>;
+#else
+template <typename Tag>
+class ThreadPool
+  : public PhoenixSingleton<ThreadPool<Tag>>
+  , public ThreadPoolBase<Tag>
+{
+    friend class MeyersSingleton<ThreadPool<Tag>>;
+#endif
 
-protected:
-public:
-  ThreadPool() = default;
-  ~ThreadPool() = default;
+  protected:
+  public:
+    ThreadPool() = default;
+    ~ThreadPool() = default;
 
-  template <typename Func, typename... Args>
-  auto SubmitDefault(Func&& func, Args&&... args, void* key);
+    template <typename Func, typename... Args>
+    auto SubmitDefault(Func&& func, Args&&... args, void* key);
 
-  template <typename Func, typename... Args>
-  requires std::invocable<Func, Args...>
-  auto Submit(Func&& func, Args&&... args, void* key)
-  {
-    return ThreadPoolTraits<Tag>::Submit(
-      *this, std::forward<Func>(func), std::forward<Args>(args)..., key);
-  }
+    template <typename Func, typename... Args>
+    requires std::invocable<Func, Args...>
+    auto Submit(Func&& func, Args&&... args, void* key)
+    {
+        return ThreadPoolTraits<Tag>::Submit(
+          *this, std::forward<Func>(func), std::forward<Args>(args)..., key);
+    }
 
-  void Worker() { ThreadPoolTraits<Tag>::WorkerLoop(*this); }
+    void Worker()
+    {
+        ThreadPoolTraits<Tag>::WorkerLoop(*this);
+    }
 
-  using ThreadPoolBase<Tag>::DefaultSubmit;
-  using ThreadPoolBase<Tag>::DefaultWorkerLoop;
+    using ThreadPoolBase<Tag>::DefaultSubmit;
+    using ThreadPoolBase<Tag>::DefaultWorkerLoop;
 };
 
 } // namespace PBB::Thread
