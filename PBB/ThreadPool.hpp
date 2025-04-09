@@ -17,18 +17,18 @@
 #include <vector>
 
 #include <PBB/Config.h>
-#ifdef PBB_HEADER_ONLY
-#include <PBB/MeyersSingleton.hpp>
-#else
-#include <PBB/PhoenixSingleton.hpp>
-#endif
 #ifdef PBB_USE_TBB_QUEUE
 #include <tbb/concurrent_queue.h>
 #else
 #include <PBB/MRMWQueue.hpp>
 #endif
 
+#ifdef PBB_HEADER_ONLY
 #include <PBB/MeyersSingleton.hpp>
+#else
+#include <PBB/PhoenixSingleton.hpp>
+#endif
+
 #include <PBB/ResettableSingleton.hpp>
 #include <PBB/ThreadPoolBase.hpp>
 #include <PBB/ThreadPoolTags.hpp>

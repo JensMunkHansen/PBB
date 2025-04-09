@@ -1,8 +1,11 @@
 #pragma once
 
-#include <PBB/pbb_export.h>
-
 #include <PBB/Config.h>
+
+#ifndef PBB_HEADER_ONLY
+#include <PBB/pbb_export.h>
+#endif
+
 #include <PBB/ThreadPool.hpp>
 
 namespace PBB
