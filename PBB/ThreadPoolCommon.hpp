@@ -4,8 +4,17 @@
 #include <memory>
 #include <utility>
 
+// For noexcept_invocable
+#include <concepts>
+#include <functional>
+#include <type_traits>
+
 namespace PBB::Thread
 {
+
+template <typename F, typename... Args>
+concept noexcept_invocable = std::invocable<F, Args...> &&
+  noexcept(std::invoke(std::declval<F>(), std::declval<Args>()...));
 
 //! Thread task interface
 /*!

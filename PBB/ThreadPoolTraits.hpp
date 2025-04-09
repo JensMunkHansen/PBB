@@ -25,6 +25,7 @@ struct ThreadPoolTraits
     template <typename Func, typename... Args>
     static auto Submit(auto& self, Func&& func, Args&&... args, void* key)
     {
+        // Just forward to DefaultSubmit
         return self.SubmitDefault(std::forward<Func>(func), std::forward<Args>(args)..., key);
     }
 };

@@ -7,11 +7,13 @@ template <typename Tag>
 template <typename Func, typename... Args>
 auto ThreadPool<Tag>::SubmitDefault(Func&& func, Args&&... args, void* key)
 {
+    // Call default submit
     return this->DefaultSubmit(std::forward<Func>(func), std::forward<Args>(args)...);
 }
 
 template <typename Tag>
 template <typename Func, typename... Args>
+requires noexcept_invocable<Func, Args...>
 auto ThreadPoolBase<Tag>::DefaultSubmit(Func&& func, Args&&... args, void* key) noexcept
 {
     static_assert(

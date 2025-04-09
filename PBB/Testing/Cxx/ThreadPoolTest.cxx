@@ -116,8 +116,3 @@ TEST_CASE("ThreadPool_No_Starvation_Detached", "[ThreadPool]")
     REQUIRE(longTaskExecuted == 1);
     REQUIRE(shortTaskExecuted == 1);
 }
-TEST_CASE("ThreadPool_Exception_NotAllowed", "[ThreadPool]")
-{
-    //    auto& myPool = ThreadPool<Tags::DefaultPool>::InstanceGet();
-    // auto future = myPool.Submit([]() -> void { throw std::runtime_error("Not good"); }, nullptr);
-}

@@ -138,6 +138,7 @@ class ThreadPoolBase
     }
 
     template <typename Func, typename... Args>
+    requires noexcept_invocable<Func, Args...>
     auto DefaultSubmit(Func&& func, Args&&... args, void* key = nullptr) noexcept;
 };
 
