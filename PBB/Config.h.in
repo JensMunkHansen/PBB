@@ -1,6 +1,8 @@
 // This file is auto-generated, please do not modify
 
+#if defined(__clang_analyzer__) || defined(__INTELLISENSE__)
 #cmakedefine PBB_HEADER_ONLY
 #cmakedefine PBB_USE_TBB_MAP
 #cmakedefine PBB_USE_TBB_QUEUE
 #cmakedefine PBB_ATOMIC_SHARED_PTR
+#endif
