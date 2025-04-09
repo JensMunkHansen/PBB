@@ -1,4 +1,5 @@
-#include "PBB/ThreadLocal.hpp"
+#include <PBB/Common.hpp>
+#include <PBB/ThreadLocal.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 #include <chrono>
@@ -191,7 +192,13 @@ TEST_CASE("ParallelFor_AllThreadsThrowingOperator_ErrorCodeReturned", "[Parallel
         {
             void Initialize() {}
 
-            void operator()(int i, int end) { throw std::runtime_error("Hello"); }
+            [[noreturn]] void operator()(int begin, int end)
+            {
+                PBB_UNREFERENCED_PARAMETER(begin);
+                PBB_UNREFERENCED_PARAMETER(end);
+
+                throw std::runtime_error("Hello");
+            }
         } f;
         return f;
     }();
@@ -204,9 +211,13 @@ TEST_CASE("ParallelFor_AllThreadsThrowingOnInitialize_ErrorCodeReturned", "[Para
     {
         struct
         {
-            void Initialize() { throw std::runtime_error("Hello"); }
+            [[noreturn]] void Initialize() { throw std::runtime_error("Hello"); }
 
-            void operator()(int i, int end) {}
+            void operator()(int i, int end)
+            {
+                PBB_UNREFERENCED_PARAMETER(i);
+                PBB_UNREFERENCED_PARAMETER(end);
+            }
         } f;
         return f;
     }();

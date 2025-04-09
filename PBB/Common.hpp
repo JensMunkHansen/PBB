@@ -19,4 +19,6 @@
     Name(const Name&) = delete;                                                                    \
     Name(Name&&) = delete;                                                                         \
     Name& operator=(const Name&) = delete;                                                         \
-    Name& operator=(Name&&) = delete;
+    Name& operator=(Name&&) = delete
+
+#define PBB_UNREFERENCED_PARAMETER(x) ((void)(x))

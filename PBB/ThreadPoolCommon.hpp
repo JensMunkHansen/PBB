@@ -9,6 +9,8 @@
 #include <functional>
 #include <type_traits>
 
+#include <PBB/Common.hpp>
+
 namespace PBB::Thread
 {
 
@@ -25,7 +27,10 @@ class IThreadTask
   public:
     virtual ~IThreadTask() = default;
     virtual void Execute() = 0;
-    virtual void OnInitializeFailure(std::exception_ptr eptr) noexcept {}
+    virtual void OnInitializeFailure(std::exception_ptr eptr) noexcept
+    {
+        PBB_UNREFERENCED_PARAMETER(eptr);
+    }
 
   protected:
     IThreadTask() = default;
@@ -52,7 +57,7 @@ class ThreadTask : public IThreadTask
     /**
      * Construct thread task (we don't allow implicit conversion of func)
      *
-     * @param func
+     * @param func (invocable)
      *
      */
     explicit ThreadTask(Func&& func)
@@ -101,7 +106,7 @@ class TaskFuture
      * Get the std::future to wait for. Deduced return types
      * available using c++14
      *
-     * @return
+     * @return future
      */
     T Get() { return m_future.get(); }
     void Detach() { m_policy = FuturePolicy::Detach; }

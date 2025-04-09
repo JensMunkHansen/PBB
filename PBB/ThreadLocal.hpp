@@ -85,8 +85,6 @@ class ThreadLocal
      */
     U& GetThreadLocalValue()
     {
-        thread_local bool is_registered = false;
-
         // Pre-emptying or rescheduling task does not modify thread_id. It
         // is not a stack variable that another can use.
         std::thread::id thread_id = std::this_thread::get_id();
@@ -210,7 +208,6 @@ class ThreadLocal
      */
     U& GetThreadLocalValue()
     {
-        thread_local bool is_registered = false;
 
         // Pre-emptying or rescheduling task does not modify this and
         // it is not a stack variable that another can use.

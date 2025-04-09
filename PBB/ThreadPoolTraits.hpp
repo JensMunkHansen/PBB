@@ -41,9 +41,10 @@ struct ThreadPoolTraits<Tags::CustomPool>
     PBB_DELETE_CTORS(ThreadPoolTraits);
     static void WorkerLoop(auto& self)
     {
-        thread_local bool initialized = false;
-        thread_local void* init_key = nullptr; // Unique key for a group of tasks
-        thread_local std::any init_result;     // Hold result of a potential initialization function
+        thread_local static bool initialized = false;
+        thread_local static void* init_key = nullptr; // Unique key for a group of tasks
+        [[maybe_unused]] thread_local static std::any
+          init_result; // Hold result of a potential initialization function
 
         while (!self.m_done.test(std::memory_order_acquire))
         {
