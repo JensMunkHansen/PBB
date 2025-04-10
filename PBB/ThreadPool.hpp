@@ -53,6 +53,15 @@ class ThreadPool
     friend class PhoenixSingleton<ThreadPool<Tag>>;
 #endif
   public:
+    /**
+     * @brief Submit
+     *
+     * Generic submit function - no requirement for noexcept
+     *
+     * @param func - functor
+     * @param args - any number of arguments
+     * @return future
+     */
     template <typename Func, typename... Args>
     requires std::invocable<Func, Args...>
     auto Submit(Func&& func, Args&&... args, void* key)
@@ -60,6 +69,16 @@ class ThreadPool
         return ThreadPoolTraits<Tag>::Submit(
           *this, std::forward<Func>(func), std::forward<Args>(args)..., key);
     }
+
+    /**
+     * @brief SubmitDefault
+     *
+     * Forward invocable to DefaultSubmit
+     *
+     * @param func - functor
+     * @param args - any number of arguments
+     * @return future
+     */
     template <typename Func, typename... Args>
     auto SubmitDefault(Func&& func, Args&&... args, void* key);
 

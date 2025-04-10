@@ -7,10 +7,8 @@ template <typename Tag>
 template <typename Func, typename... Args>
 auto ThreadPool<Tag>::SubmitDefault(Func&& func, Args&&... args, void* key)
 {
-    PBB_UNREFERENCED_PARAMETER(key);
-
     // Call default submit
-    return this->DefaultSubmit(std::forward<Func>(func), std::forward<Args>(args)...);
+    return this->DefaultSubmit(std::forward<Func>(func), std::forward<Args>(args)..., key);
 }
 
 template <typename Tag>

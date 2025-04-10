@@ -25,20 +25,28 @@ struct ThreadPoolTraits
     template <typename Func, typename... Args>
     static auto Submit(auto& self, Func&& func, Args&&... args, void* key)
     {
-        // Just forward to DefaultSubmit
+        // Just forward to DefaultSubmit, which requires noexcept.
         return self.SubmitDefault(std::forward<Func>(func), std::forward<Args>(args)..., key);
     }
 };
 
 //! ThreadPoolTraits<CustomPool>
 /*! Specialization of the worker loop and submit functions to
-    handle a per-thread initialization function.
+    handle a per-thread initialization function and exception handling
  */
 template <>
 struct ThreadPoolTraits<Tags::CustomPool>
 {
     // To keep clangd silent
     PBB_DELETE_CTORS(ThreadPoolTraits);
+
+    /**
+     * WorkerLoop
+     *
+     * @brief Workerloop supporting an initialization function and exception handling
+     *
+     * @param ThreadPool instance
+     */
     static void WorkerLoop(auto& self)
     {
 #pragma clang diagnostic push
@@ -150,6 +158,13 @@ struct ThreadPoolTraits<Tags::CustomPool>
         }
     }
 
+    /**
+     * @brief Submit function supporting invocable throwing and a registered per-thread
+     * initialization function
+     *
+     * @param parameter description
+     * @return description
+     */
     template <typename Func, typename... Args>
     static auto Submit(auto& self, Func&& func, Args&&... args, void* key)
     {
