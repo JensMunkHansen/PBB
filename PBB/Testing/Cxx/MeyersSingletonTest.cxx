@@ -67,6 +67,7 @@ TEST_CASE("MeyersSingleton_thread_safety", "[MeyersSingleton][thread]")
 
     std::mutex ptrMutex;
 
+    threads.reserve(numThreads);
     for (int i = 0; i < numThreads; ++i)
     {
         threads.emplace_back(

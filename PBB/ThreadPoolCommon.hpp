@@ -4,19 +4,10 @@
 #include <memory>
 #include <utility>
 
-// For noexcept_invocable
-#include <concepts>
-#include <functional>
-#include <type_traits>
-
 #include <PBB/Common.hpp>
 
 namespace PBB::Thread
 {
-
-template <typename F, typename... Args>
-concept noexcept_invocable = std::invocable<F, Args...> &&
-  noexcept(std::invoke(std::declval<F>(), std::declval<Args>()...));
 
 //! Thread task interface
 /*!
@@ -139,7 +130,8 @@ class InitAwareTask : public ThreadTask<Func>
   public:
     using Base = ThreadTask<Func>;
 
-    InitAwareTask(Func&& func, std::shared_ptr<Promise> promise)
+    PBB_DELETE_CTORS(InitAwareTask);
+    explicit InitAwareTask(Func&& func, std::shared_ptr<Promise> promise)
       : Base(std::move(func))
       , m_promise(std::move(promise))
     {
@@ -156,7 +148,10 @@ class InitAwareTask : public ThreadTask<Func>
 
 } // namespace PBB::Thread
 
+// TOOD: Move implementation out into .txx and include if header-only
+#ifdef PBB_HEADER_ONLY
 namespace PBB::Thread
 {
 IThreadTask::~IThreadTask() = default;
 }
+#endif

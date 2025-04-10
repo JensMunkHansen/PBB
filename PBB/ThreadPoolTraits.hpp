@@ -39,7 +39,6 @@ struct ThreadPoolTraits<Tags::CustomPool>
 {
     // To keep clangd silent
     PBB_DELETE_CTORS(ThreadPoolTraits);
-
     /**
      * WorkerLoop
      *
