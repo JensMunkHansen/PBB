@@ -53,11 +53,13 @@ template <typename T>
 concept NoThrowMoveConstructible = std::is_nothrow_move_constructible_v<T>;
 
 template <typename T>
-concept NoThrowMoveAssignable = std::is_nothrow_move_assignable_v<T>;
-
-template <typename T>
 concept NoThrowCopyConstructible = std::is_nothrow_copy_constructible_v<T>;
 
+/*
+template <typename T>
+concept NoThrowMoveAssignable = std::is_nothrow_move_assignable_v<T>;
+
+*/
 template <typename T>
 class IMRMWQueue
 {

@@ -45,10 +45,9 @@ include(spsAsan)
 include(spsInstallDirs)
 include(spsConfig)
 include(spsCompilerPlatformSupport)
-set(SPS_PEDANTIC_BUILD_WARNINGS 1)
+# set(SPS_PEDANTIC_BUILD_WARNINGS 1) #
 include(spsCompilerWarningFlags)
 include(spsTargets)
-#target_compile_options(build INTERFACE -Weverything)
 
 if (${PROJECT_NAME}_LIBRARY_TYPE STREQUAL "INTERFACE")
   set(${PROJECT_NAME}_HEADER_ONLY ON)
