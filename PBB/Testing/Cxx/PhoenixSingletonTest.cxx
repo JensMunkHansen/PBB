@@ -50,6 +50,7 @@ TEST_CASE("PhoenixSingleton_Instantiation", "[PhoenixSingleton]")
 {
     Test* test = Test::InstancePtrGet();
     TTest<float>* ttest = TTest<float>::InstancePtrGet();
+
     PBB_UNREFERENCED_PARAMETER(test);
     PBB_UNREFERENCED_PARAMETER(ttest);
     REQUIRE(true); // placeholder

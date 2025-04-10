@@ -1,7 +1,14 @@
 // In ThreadPoolCustomSpecializations.hpp
 #pragma once
 
+#include <PBB/Config.h>
+
+#ifdef PBB_HEADER_ONLY
 #include <PBB/MeyersSingleton.hpp>
+#else
+#include <PBB/PhoenixSingleton.hpp>
+#endif
+
 #include <PBB/ThreadPool.hpp>
 #include <PBB/ThreadPoolBase.hpp>
 #include <PBB/ThreadPoolTraits.hpp>
@@ -12,13 +19,21 @@
 namespace PBB::Thread
 {
 
+#ifdef PBB_HEADER_ONLY
 template <>
 class ThreadPool<Tags::CustomPool>
   : public MeyersSingleton<ThreadPool<Tags::CustomPool>>
   , public ThreadPoolBase<Tags::CustomPool>
 {
     friend class MeyersSingleton<ThreadPool<Tags::CustomPool>>;
-
+#else
+template <>
+class ThreadPool<Tags::CustomPool>
+  : public PhoenixSingleton<ThreadPool<Tags::CustomPool>>
+  , public ThreadPoolBase<Tags::CustomPool>
+{
+    friend class PhoenixSingleton<ThreadPool<Tags::CustomPool>>;
+#endif
     template <typename>
     friend struct ThreadPoolTraits;
 
@@ -29,7 +44,10 @@ class ThreadPool<Tags::CustomPool>
     void Destroy();
 
   public:
-    void Worker() { ThreadPoolTraits<Tags::CustomPool>::WorkerLoop(*this); }
+    void Worker()
+    {
+        ThreadPoolTraits<Tags::CustomPool>::WorkerLoop(*this);
+    }
 
     template <typename Func, typename... Args>
     requires std::invocable<Func, Args...>
@@ -92,7 +110,9 @@ class ThreadPool<Tags::CustomPool>
 
 } // namespace PBB::Thread
 
+#ifdef PBB_HEADER_ONLY
 namespace PBB::Thread
 {
-ThreadPool<Tags::CustomPool>::~ThreadPool() = default;
+inline ThreadPool<Tags::CustomPool>::~ThreadPool() = default;
 }
+#endif // PBB_HEADER_ONLY

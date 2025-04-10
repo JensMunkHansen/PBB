@@ -1,5 +1,7 @@
 #pragma once
 
+#include <PBB/ThreadPool.hpp>
+
 namespace PBB::Thread
 {
 

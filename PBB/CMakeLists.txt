@@ -59,7 +59,9 @@ if(NOT PBB_HEADER_ONLY)
       FILES
         ThreadPoolSingleton.h
     PRIVATE
-      PhoenixSingleton.hpp        
+      PhoenixSingleton.hpp
+      ThreadPoolCommon.cxx
+      ThreadPoolCustom.cxx
       ThreadPoolSingleton.cxx
       ThreadPool.cxx
   )

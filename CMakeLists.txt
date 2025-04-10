@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.28...3.31)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(PBB
   VERSION 1.0.0
@@ -9,8 +10,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
 
 include(CMakeDependentOption)
 
-# On Windows, this is stored in the registry. On other platforms,
-# inside $HOME/.cmake/packages
+# === Export build to .cmake package registry ===
 option(${PROJECT_NAME}_EXPORT_TO_PACKAGE_REGISTRY "Export installation to package registry" OFF)
 if (${PROJECT_NAME}_EXPORT_TO_PACKAGE_REGISTRY)
   set(CMAKE_EXPORT_PACKAGE_REGISTRY 1)
@@ -31,10 +31,10 @@ endif()
 
 option(BUILD_EXAMPLES "Build examples consuming the library" ON)
 option(BUILD_TESTING "Build testing" ON)
+
+# === Intel TBB ===
 option(PBB_USE_TBB_QUEUE "Use TBB queue" OFF)
 option(PBB_USE_TBB_MAP "Use TBB map" OFF)
-
-set(DEBUG_POSTFIX d)
 
 # === Interface target for build ===
 add_library(build INTERFACE)
@@ -45,7 +45,6 @@ include(spsAsan)
 include(spsInstallDirs)
 include(spsConfig)
 include(spsCompilerPlatformSupport)
-# set(SPS_PEDANTIC_BUILD_WARNINGS 1) #
 include(spsCompilerWarningFlags)
 include(spsTargets)
 
@@ -62,6 +61,7 @@ if (BUILD_TESTING)
   enable_testing()
 endif()
 
+# === Intel TBB ===
 find_package(TBB QUIET)
 if (NOT TBB_Found)
   set(CANDIDATE /opt/intel/oneapi/tbb/2022.1/lib/libtbb.so)
@@ -72,7 +72,6 @@ if (NOT TBB_Found)
     set(TBB_Found FALSE)
   endif()
 endif()
-
 if (NOT TBB_Found)
   set(PBB_USE_TBB_QUEUE OFF)
   set(PBB_USE_TBB_MAP OFF)
@@ -80,6 +79,7 @@ endif()
 message("Using TBB Queue: ${PBB_USE_TBB_QUEUE}")
 message("Using TBB Map: ${PBB_USE_TBB_MAP}")
 
+# === Set CMake build dir - used by deployment test ===
 if (NOT DEFINED pbb_cmake_build_dir)
   set(pbb_cmake_build_dir
     ${CMAKE_INSTALL_LIBDIR}/cmake/${TARGET_NAME})
@@ -87,6 +87,7 @@ endif()
 
 add_subdirectory(PBB)
 
+# === Valgrind ===
 find_program(VALGRIND "valgrind")
 if (VALGRIND)
   set(DART_CONFIG DartConfiguration.tcl)
@@ -116,4 +117,5 @@ if (BUILD_EXAMPLES)
   add_subdirectory(Examples)
 endif()
 
+# === Export compile_commands.json for clangd ===
 include(spsCompileCommands)

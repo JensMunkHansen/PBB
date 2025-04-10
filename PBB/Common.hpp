@@ -1,6 +1,13 @@
 #pragma once
 
+#include <concepts> // for std::invocable
 #include <exception>
+#include <functional> // for std::invoke
+#include <utility>    // for std::declval
+
+template <typename F, typename... Args>
+concept noexcept_invocable = std::invocable<F, Args...> &&
+  noexcept(std::invoke(std::declval<F>(), std::declval<Args>()...));
 
 #ifdef PBB_TESTING
 #define PBB_ASSERT(x)                                                                              \
@@ -19,6 +26,6 @@
     Name(const Name&) = delete;                                                                    \
     Name(Name&&) = delete;                                                                         \
     Name& operator=(const Name&) = delete;                                                         \
-    Name& operator=(Name&&) = delete
+    Name& operator=(Name&&) = delete;
 
 #define PBB_UNREFERENCED_PARAMETER(x) ((void)(x))
