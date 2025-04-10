@@ -25,7 +25,7 @@ concept noexcept_invocable = std::invocable<F, Args...> &&
 class IThreadTask
 {
   public:
-    virtual ~IThreadTask() = default;
+    virtual ~IThreadTask();
     virtual void Execute() = 0;
     virtual void OnInitializeFailure(std::exception_ptr eptr) noexcept
     {
@@ -155,3 +155,8 @@ class InitAwareTask : public ThreadTask<Func>
 };
 
 } // namespace PBB::Thread
+
+namespace PBB::Thread
+{
+IThreadTask::~IThreadTask() = default;
+}

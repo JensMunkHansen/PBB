@@ -47,7 +47,7 @@ struct FunctorWithInitialize
         std::cout << out.str();
     }
 
-    void Reduce() { std::cout << "Reducing results\n"; }
+    [[maybe_unused]] void Reduce() { std::cout << "Reducing results\n"; }
     // Number of unique threads calling initialize
     size_t UniqueInitializeCount() const { return nInitializeCalls.load(); }
     // Number of unique threads calling operator()
@@ -84,8 +84,8 @@ TEST_CASE("ThreadPool_With_Initialize", "[ThreadPoolCustom]")
     // Start many tasks
     for (size_t iTask = 0; iTask < nTasks; iTask++)
     {
-        int chunk_begin = iTask * 5;
-        int chunk_end = (iTask + 1) * 5;
+        int chunk_begin = static_cast<int>(iTask) * 5;
+        int chunk_end = (static_cast<int>(iTask) + 1) * 5;
         auto fut = pool.Submit(
           [chunk_begin, chunk_end, &func]() -> void { func(chunk_begin, chunk_end); }, call_key);
         futures.emplace_back(std::move(fut));

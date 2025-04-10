@@ -65,7 +65,7 @@ class ThreadPool
 
   protected:
     ThreadPool() = default;
-    ~ThreadPool();
+    ~ThreadPool() override;
 
     using ThreadPoolBase<Tag>::DefaultSubmit;
     using ThreadPoolBase<Tag>::DefaultWorkerLoop;

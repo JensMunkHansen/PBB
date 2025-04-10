@@ -72,6 +72,11 @@ if(NOT PBB_HEADER_ONLY)
 else()
   target_link_libraries(${TARGET_NAME} INTERFACE build)
 endif()
+if (PBB_HEADER_ONLY)
+  target_compile_options(${TARGET_NAME} INTERFACE "-Wno-ctad-maybe-unsupported")
+endif()
+target_compile_options(${TARGET_NAME} INTERFACE "-Wno-padded")
+target_compile_options(${TARGET_NAME} INTERFACE "-Wno-documentation")
 spsSetDebugPostfix(${TARGET_NAME} d)
 
 # Some IDE's have poor support for FILE_SET

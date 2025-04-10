@@ -4,6 +4,7 @@
 #include <iostream>
 #include <thread>
 
+#include <PBB/Common.hpp>
 #include <PBB/PhoenixSingleton.hpp>
 
 namespace
@@ -21,7 +22,7 @@ class Test : public PBB::PhoenixSingleton<Test>
         m_float = 2.0f;
         m_heapFloat = new float;
     }
-    ~Test()
+    ~Test() override
     {
         std::cout << "Destroyed\n";
         delete m_heapFloat;
@@ -38,7 +39,7 @@ class TTest : public PBB::PhoenixSingleton<TTest<T>>
   public:
     T m_value;
     TTest() { m_value = T(1.0); }
-    ~TTest() { std::cout << "Destroyed\n"; }
+    ~TTest() override { std::cout << "Destroyed\n"; }
 
   private:
     friend class PBB::PhoenixSingleton<TTest<T>>;
@@ -49,7 +50,8 @@ TEST_CASE("PhoenixSingleton_Instantiation", "[PhoenixSingleton]")
 {
     Test* test = Test::InstancePtrGet();
     TTest<float>* ttest = TTest<float>::InstancePtrGet();
-
+    PBB_UNREFERENCED_PARAMETER(test);
+    PBB_UNREFERENCED_PARAMETER(ttest);
     REQUIRE(true); // placeholder
 }
 

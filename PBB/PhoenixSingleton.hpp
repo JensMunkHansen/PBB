@@ -92,8 +92,11 @@ std::atomic<T*> PhoenixSingleton<T>::g_instance{ nullptr };
 template <class T>
 std::recursive_mutex PhoenixSingleton<T>::g_mutex;
 
-// TODO: Get rid of this
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wglobal-constructors"
 template <class T>
 const int PhoenixSingleton<T>::s_atexit = PhoenixSingleton<T>::InstanceDestroy();
+
+#pragma clang diagnostic pop
 
 } // namespace PBB
