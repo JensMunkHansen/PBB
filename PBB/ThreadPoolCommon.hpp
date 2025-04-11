@@ -1,18 +1,41 @@
 #pragma once
 
+#include <any>
+#include <functional>
 #include <future>
 #include <memory>
 #include <utility>
 
 #include <PBB/Common.hpp>
+#include <PBB/Config.h>
 
 namespace PBB::Thread
 {
 
-//! Thread task interface
-/*!
-  Abstract interface for thread task.
- */
+// InitKey now owns the functor to keep it alive
+struct InitKey
+{
+    std::shared_ptr<void> shared;
+    std::size_t version;
+
+    bool operator==(const InitKey& rhs) const noexcept
+    {
+        return shared == rhs.shared && version == rhs.version;
+    }
+
+    struct Hash
+    {
+        std::size_t operator()(const InitKey& k) const noexcept
+        {
+            return std::hash<std::shared_ptr<void>>{}(k.shared) ^
+              std::hash<std::size_t>{}(k.version);
+        }
+    };
+};
+}
+
+namespace PBB::Thread
+{
 class IThreadTask
 {
   public:
@@ -27,40 +50,17 @@ class IThreadTask
     IThreadTask() = default;
 
   private:
-    /**
-       Ensure that derived classes must be non-copyable or assignable.
-     */
     IThreadTask(const IThreadTask&) = delete;
     IThreadTask& operator=(const IThreadTask&) = delete;
 };
 
-//! Thread task
-/*!
- * Thread task implementation.
- *
- * Template wrapper for move-constructible callables
- */
 template <typename Func>
 requires std::is_move_constructible_v<Func>
 class ThreadTask : public IThreadTask
 {
   public:
-    /**
-     * Construct thread task (we don't allow implicit conversion of func)
-     *
-     * @param func (invocable)
-     *
-     */
-    explicit ThreadTask(Func&& func)
-      : m_func(std::move(func))
-    {
-    }
-
-    /**
-     * Function executed by thread
-     *
-     */
-    void Execute() final { m_func(); }
+    explicit ThreadTask(Func&& func);
+    void Execute() final;
 
   private:
     Func m_func;
@@ -72,84 +72,41 @@ enum class FuturePolicy
     Detach
 };
 
-//! Task future
-/*! Simple wrapper around std::future. The behavoir of futures
- * returned from std::async is added. The object will block and
- * wait for completion unless, detach is called.
- */
 template <typename T>
 class TaskFuture
 {
   public:
-    explicit TaskFuture(std::future<T>&& future, FuturePolicy policy = FuturePolicy::Wait)
-      : m_future(std::move(future))
-      , m_policy(policy)
-    {
-    }
-
+    explicit TaskFuture(std::future<T>&& future, FuturePolicy policy = FuturePolicy::Wait);
     TaskFuture(TaskFuture&&) noexcept = default;
     TaskFuture& operator=(TaskFuture&&) noexcept = default;
+    PBB_DELETE_COPY_CTORS(TaskFuture);
 
-    TaskFuture(const TaskFuture&) = delete;
-    TaskFuture& operator=(const TaskFuture&) = delete;
-
-    /**
-     * Get the std::future to wait for. Deduced return types
-     * available using c++14
-     *
-     * @return future
-     */
-    T Get() { return m_future.get(); }
-    void Detach() { m_policy = FuturePolicy::Detach; }
-
-    /**
-     * Destructor
-     *
-     */
-    ~TaskFuture()
-    {
-        if (m_future.valid() && m_policy == FuturePolicy::Wait)
-        {
-            // Block if not detached
-            m_future.get();
-        }
-    }
+    T Get();
+    void Detach();
+    ~TaskFuture();
 
   private:
     std::future<T> m_future;
     FuturePolicy m_policy;
 };
 
-//! InitAwareTask
-/*! Extension of @ref ThreadTask with a shared promise to track
- * potential exceptions thrown during initialization.
- */
 template <typename Func, typename Promise>
 class InitAwareTask : public ThreadTask<Func>
 {
   public:
     using Base = ThreadTask<Func>;
-
     PBB_DELETE_CTORS(InitAwareTask);
-    explicit InitAwareTask(Func&& func, std::shared_ptr<Promise> promise)
-      : Base(std::move(func))
-      , m_promise(std::move(promise))
-    {
-    }
-    // Store last exception inside the promise
-    void OnInitializeFailure(std::exception_ptr eptr) noexcept override
-    {
-        m_promise->set_exception(std::move(eptr));
-    }
+
+    explicit InitAwareTask(Func&& func, std::shared_ptr<Promise> promise);
+    void OnInitializeFailure(std::exception_ptr eptr) noexcept override;
 
   private:
     std::shared_ptr<Promise> m_promise;
 };
 
 } // namespace PBB::Thread
-
-// TOOD: Move implementation out into .txx and include if header-only
 #ifdef PBB_HEADER_ONLY
+#include <PBB/ThreadPoolCommon.txx>
 namespace PBB::Thread
 {
 IThreadTask::~IThreadTask() = default;

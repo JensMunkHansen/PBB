@@ -1,3 +1,5 @@
+#include <PBB/Config.h>
+
 #include <PBB/Common.hpp>
 #include <PBB/ThreadLocal.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -9,7 +11,10 @@
 #include <thread>
 
 #include <PBB/ParallelFor.hpp>
+#ifndef PBB_HEADER_ONLY
+#include <PBB/ThreadPoolCommon.txx>
 
+#endif
 namespace
 {
 struct TaskReporting

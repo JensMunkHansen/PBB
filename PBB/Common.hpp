@@ -28,4 +28,8 @@ concept noexcept_invocable = std::invocable<F, Args...> &&
     Name& operator=(const Name&) = delete;                                                         \
     Name& operator=(Name&&) = delete;
 
+#define PBB_DELETE_COPY_CTORS(Name)                                                                \
+    Name(const Name&) = delete;                                                                    \
+    Name& operator=(const Name&) = delete;
+
 #define PBB_UNREFERENCED_PARAMETER(x) ((void)(x))
