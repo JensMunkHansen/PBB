@@ -1,4 +1,3 @@
-#include <strstream>
 
 #include <PBB/Config.h>
 
@@ -43,6 +42,7 @@ struct fmt::formatter<std::thread::id> : fmt::formatter<std::string>
     }
 };
 #else
+#include <sstream>
 namespace fmt_shim
 {
 // Overload for std::thread::id
