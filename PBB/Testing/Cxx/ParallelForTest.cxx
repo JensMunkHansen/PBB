@@ -5,9 +5,48 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <chrono>
+
+#ifdef PBB_STD_FORMAT
+#include <format>
+namespace fmt_shim
+{
+using std::format;
+}
+// Only add this if GCC13+ is missing support or if you want uniform behavior:
+template <>
+struct std::formatter<std::thread::id, char> : std::formatter<std::string, char>
+{
+    auto format(const std::thread::id& id, format_context& ctx) const
+    {
+        std::ostringstream oss;
+        oss << id;
+        return std::formatter<std::string, char>::format(oss.str(), ctx);
+    }
+};
+#else
+#include <fmt/core.h>
+#include <fmt/format.h>
+namespace fmt_shim
+{
+using fmt::format;
+}
+template <>
+struct fmt::formatter<std::thread::id> : fmt::formatter<std::string>
+{
+    auto format(const std::thread::id& id, fmt::format_context& ctx) const
+    {
+        std::ostringstream oss;
+        oss << id;
+        return fmt::formatter<std::string>::format(oss.str(), ctx);
+    }
+};
+
+#endif
+
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <thread>
 
 #include <PBB/ParallelFor.hpp>
@@ -180,6 +219,9 @@ TEST_CASE("ParallelFor_PartialSummationUsingThreadLocal_ValidResult", "[Parallel
     PartialSummationFunctor func;
     PBB::ParallelFor(0, 100, func);
     REQUIRE(func.globalSum == 4950);
+#ifndef PBB_HEADER_ONLY
+    PBB::Thread::ThreadPool<PBB::Thread::Tags::CustomPool>::InstanceDestroy();
+#endif
 }
 
 TEST_CASE("ParallelFor_ThreadLocalVectors_ValidResult", "[ParallelFor]")
@@ -202,7 +244,8 @@ TEST_CASE("ParallelFor_AllThreadsThrowingOperator_ErrorCodeReturned", "[Parallel
                 PBB_UNREFERENCED_PARAMETER(begin);
                 PBB_UNREFERENCED_PARAMETER(end);
 
-                throw std::runtime_error("Hello");
+                throw std::runtime_error(fmt_shim::format(
+                  "Runtime error in operator() [thread {}]", std::this_thread::get_id()));
             }
         } f;
         return f;
@@ -216,7 +259,10 @@ TEST_CASE("ParallelFor_AllThreadsThrowingOnInitialize_ErrorCodeReturned", "[Para
     {
         struct
         {
-            [[noreturn]] void Initialize() { throw std::runtime_error("Hello"); }
+            [[noreturn]] void Initialize()
+            {
+                throw std::runtime_error("Runtime error in Initialize");
+            }
 
             void operator()(int i, int end)
             {
