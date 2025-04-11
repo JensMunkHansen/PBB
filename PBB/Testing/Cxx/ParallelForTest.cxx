@@ -23,7 +23,7 @@ struct std::formatter<std::thread::id, char> : std::formatter<std::string, char>
         return std::formatter<std::string, char>::format(oss.str(), ctx);
     }
 };
-#else
+#elif PBB_FORMAT
 #include <fmt/core.h>
 #include <fmt/format.h>
 namespace fmt_shim
@@ -40,7 +40,37 @@ struct fmt::formatter<std::thread::id> : fmt::formatter<std::string>
         return fmt::formatter<std::string>::format(oss.str(), ctx);
     }
 };
+#else
+namespace fmt_shim
+{
+// Overload for std::thread::id
+inline std::string format(const std::string& fmt, const std::thread::id& id)
+{
+    if (fmt.find("{}") == std::string::npos)
+        return fmt; // no placeholder? just return it
 
+    std::ostringstream oss;
+    oss << id;
+
+    std::string out = fmt;
+    return out.replace(out.find("{}"), 2, oss.str());
+}
+
+// Optional: generic fallback (e.g., for string pass-through)
+template <typename T>
+inline std::string format(const std::string& fmt, const T& value)
+{
+    if constexpr (std::is_same_v<T, std::string>)
+        return fmt_format(fmt, value); // fallback to above
+    else
+    {
+        std::ostringstream oss;
+        oss << value;
+        std::string out = fmt;
+        return out.replace(out.find("{}"), 2, oss.str());
+    }
+}
+}
 #endif
 
 #include <iostream>

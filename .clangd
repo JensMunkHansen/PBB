@@ -1,0 +1,4 @@
+Diagnostics:
+  Suppress:
+    - -Wunknown-pragmas
+    - -Wunmatched-pragma-pop

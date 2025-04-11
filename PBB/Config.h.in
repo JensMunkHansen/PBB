@@ -5,3 +5,4 @@
 #cmakedefine PBB_USE_TBB_QUEUE
 #cmakedefine PBB_ATOMIC_SHARED_PTR
 #cmakedefine PBB_STD_FORMAT
+#cmakedefine PBB_FORMAT
