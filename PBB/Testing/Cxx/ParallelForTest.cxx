@@ -1,3 +1,5 @@
+#include <strstream>
+
 #include <PBB/Config.h>
 
 #include <PBB/Common.hpp>
