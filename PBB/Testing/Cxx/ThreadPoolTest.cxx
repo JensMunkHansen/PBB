@@ -31,7 +31,7 @@ int shortTask()
  */
 int mediumTask()
 {
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
     return 1;
 }
 
@@ -43,7 +43,7 @@ int mediumTask()
  */
 int longTask()
 {
-    std::this_thread::sleep_for(std::chrono::milliseconds(150));
+    std::this_thread::sleep_for(std::chrono::milliseconds(30));
     return 1;
 }
 
@@ -78,8 +78,8 @@ TEST_CASE("ThreadPool_No_Starvation", "[ThreadPool]")
     auto end = steady_clock::now();
 
     auto duration = duration_cast<milliseconds>(end - start);
-    REQUIRE(duration.count() >= 150);
-    REQUIRE(duration.count() < 200);
+    REQUIRE(duration.count() >= 30);
+    REQUIRE(duration.count() < 50);
     REQUIRE(longTaskExecuted == 1);
     REQUIRE(mediumTaskExecuted == 1);
 }
@@ -111,7 +111,7 @@ TEST_CASE("ThreadPool_No_Starvation_Detached", "[ThreadPool]")
     taskFuture1.Detach();
 
     // Wait enough time
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     REQUIRE(longTaskExecuted == 1);
     REQUIRE(shortTaskExecuted == 1);
