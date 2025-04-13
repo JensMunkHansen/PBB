@@ -33,3 +33,13 @@ concept noexcept_invocable = std::invocable<F, Args...> &&
     Name& operator=(const Name&) = delete;
 
 #define PBB_UNREFERENCED_PARAMETER(x) ((void)(x))
+
+#define spsErrorWithObjectMacro(unused_ptr, stream_expr)                                           \
+    do                                                                                             \
+    {                                                                                              \
+        std::cerr << stream_expr << std::endl;                                                     \
+    } while (0)
+
+typedef size_t spsIdType;
+
+#define PBB_NOT_USED(x)
