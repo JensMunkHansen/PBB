@@ -58,11 +58,8 @@ if(NOT PBB_HEADER_ONLY)
       BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/..
       FILES
         ThreadPoolSingleton.h
-        SMPTools.h # 
-        SMPTools.hpp
     PRIVATE
       PhoenixSingleton.hpp
-      SMPTools.cxx
       #SafeThreadLocal.hpp
       #SafeToolsAPI.cxx
       #SafeFunctors.txx
