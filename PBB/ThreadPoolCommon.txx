@@ -1,3 +1,5 @@
+#include <iostream>
+
 namespace PBB::Thread
 {
 
@@ -45,8 +47,6 @@ TaskFuture<T>::~TaskFuture()
         m_future.get();
     }
 }
-
-// InitAwareTask implementation
 
 template <typename Func, typename Promise>
 InitAwareTask<Func, Promise>::InitAwareTask(Func&& func, std::shared_ptr<Promise> promise)

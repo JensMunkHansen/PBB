@@ -64,9 +64,9 @@ class ThreadTask : public IThreadTask
 {
   public:
     explicit ThreadTask(Func&& func);
-    void Execute() final;
+    void Execute() override;
 
-  private:
+  protected:
     Func m_func;
 };
 

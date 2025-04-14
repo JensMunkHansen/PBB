@@ -80,8 +80,14 @@ struct ThreadPoolTraits<Tags::CustomPool>
                 // - A spurious wakeup may have occurred
                 // - The queue could be empty even if we were notified
                 if (self.m_done.test(std::memory_order_acquire))
+                {
+                    if (pTask.first)
+                    {
+                        // pTask.first->OnExecuteFailure(std::make_exception_ptr(
+                        //     std::runtime_error("Task never executed due to shutdown")));
+                    }
                     break;
-
+                }
                 // At this point we assume there's work available.
                 // Try to get a task from the queue — it's possible another
                 // thread beat us to it, so this may still fail.
@@ -151,19 +157,48 @@ struct ThreadPoolTraits<Tags::CustomPool>
                     continue;
                 }
             }
+            // Always execute - unless initialization failed.
+            pTask.first->Execute();
+        }
+    }
+
+    template <typename Func, typename... Args>
+    static auto MakeWrappedTask(Func&& func, Args&&... args)
+    {
+        using ResultType = std::invoke_result_t<Func, Args...>;
+        using Promise = std::promise<ResultType>;
+
+        auto promise = std::make_shared<Promise>();
+        TaskFuture<ResultType> future{ promise->get_future() };
+        std::weak_ptr<Promise> weak = promise;
+
+        auto wrapper =
+          [func = std::forward<Func>(func), ... args = std::forward<Args>(args), weak]() mutable
+        {
             try
             {
-                // Always execute - unless initialization failed.
-                pTask.first->Execute();
+                if constexpr (std::is_void_v<ResultType>)
+                {
+                    std::invoke(std::move(func), std::move(args)...);
+                    if (auto p = weak.lock())
+                        p->set_value();
+                }
+                else
+                {
+                    if (auto p = weak.lock())
+                        p->set_value(std::invoke(std::move(func), std::move(args)...));
+                }
             }
             catch (...)
             {
-                if (pTask.first)
-                {
-                    pTask.first->OnExecuteFailure(std::current_exception());
-                }
+                if (auto p = weak.lock())
+                    p->set_exception(std::current_exception());
             }
-        }
+        };
+
+        auto task =
+          std::make_unique<InitAwareTask<decltype(wrapper), Promise>>(std::move(wrapper), promise);
+        return std::make_tuple(std::move(task), std::move(future));
     }
 
     /**
@@ -176,6 +211,7 @@ struct ThreadPoolTraits<Tags::CustomPool>
     template <typename Func, typename... Args>
     static auto Submit(auto& self, Func&& func, Args&&... args, void* key)
     {
+#if 0
         using ResultType = std::invoke_result_t<Func, Args...>;
         using Promise = std::promise<ResultType>;
         using Future = TaskFuture<ResultType>;
@@ -210,6 +246,12 @@ struct ThreadPoolTraits<Tags::CustomPool>
 
         using Task = InitAwareTask<decltype(wrapped), Promise>;
         auto task = std::make_unique<Task>(std::move(wrapped), std::move(promise));
+#else
+        auto pair = MakeWrappedTask(std::forward<Func>(func), std::forward<Args>(args)...);
+        auto task = std::move(std::get<0>(pair));
+        auto future = std::move(std::get<1>(pair));
+
+#endif
         // auto task = std::make_unique<Task>(wrapped, promise);
 #ifdef PBB_USE_TBB_QUEUE
         self.m_workQueue.push({ std::move(task), key });
@@ -282,3 +324,14 @@ This combo	Makes your code memory-safe, exception-safe, and crash-free ✅
 
 // ASAN_OPTIONS=detect_leaks=1 ./your_app
 // -fsanitize=address -g
+
+#if 0
+auto fut = pool.Submit([chunk_begin, chunk_end, &func, promise]() {
+    try {
+        func(chunk_begin, chunk_end);
+        promise->set_value();
+    } catch (...) {
+        promise->set_exception(std::current_exception());
+    }
+}, callKey);
+#endif

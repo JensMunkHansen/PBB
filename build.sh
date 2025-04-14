@@ -22,9 +22,9 @@ libconfigs=(
 )
 
 configs=(
-#    "Release"
+    "Release"
     "Debug"
-#         "Asan"
+#    "Asan"
 )
 
 if [ -d "$HOME/tspkg/ArtifactoryInstall/Linux/Release/lib/cmake/Catch2" ]; then
@@ -36,7 +36,7 @@ for libconfig in "${libconfigs[@]}"; do
   echo "==== Building $name Configuration ===="
 
   # Configure
-  bear_execute "cmake --preset linux -B $(pwd)/build/$name $cmake_args -DCatch2_DIR=$Catch2_DIR"
+  bear_execute "cmake --preset linux-gcc -B $(pwd)/build/$name $cmake_args -DCatch2_DIR=$Catch2_DIR"
 
   for config in "${configs[@]}"; do
       bear_execute "cmake --build build/$name --config $config"
