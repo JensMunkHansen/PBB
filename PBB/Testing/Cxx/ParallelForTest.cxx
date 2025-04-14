@@ -147,14 +147,14 @@ class PartialSummationFunctor
     // Initialize thread-local variables
     void Initialize()
     {
-        int& localSum = threadLocalStorage->GetThreadLocalValue();
+        int& localSum = threadLocalStorage->Local();
         localSum = 0;
     }
 
     // Process data within the given range
     void operator()(int iStart, int iEnd)
     {
-        int& localSum = threadLocalStorage->GetThreadLocalValue();
+        int& localSum = threadLocalStorage->Local();
         for (int i = iStart; i < iEnd; ++i)
         {
             localSum += i; // Sum the range of numbers
@@ -194,7 +194,7 @@ struct VectorOutputFunctor
         thread_local bool initialized = false;
         if (!initialized)
         {
-            auto& localValues = threadLocalStorage->GetThreadLocalValue();
+            auto& localValues = threadLocalStorage->Local();
             localValues = std::vector<int>();
         }
     }
@@ -202,7 +202,7 @@ struct VectorOutputFunctor
     // Process data within the given range
     void operator()(int iStart, int iEnd)
     {
-        auto& localValues = threadLocalStorage->GetThreadLocalValue();
+        auto& localValues = threadLocalStorage->Local();
         for (int i = iStart; i < iEnd; ++i)
         {
             localValues.push_back(i);
