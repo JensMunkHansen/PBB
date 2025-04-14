@@ -151,9 +151,18 @@ struct ThreadPoolTraits<Tags::CustomPool>
                     continue;
                 }
             }
-
-            // Always execute - unless initialization failed.
-            pTask.first->Execute();
+            try
+            {
+                // Always execute - unless initialization failed.
+                pTask.first->Execute();
+            }
+            catch (...)
+            {
+                if (pTask.first)
+                {
+                    pTask.first->OnExecuteFailure(std::current_exception());
+                }
+            }
         }
     }
 

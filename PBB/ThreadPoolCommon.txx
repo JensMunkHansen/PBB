@@ -58,7 +58,27 @@ InitAwareTask<Func, Promise>::InitAwareTask(Func&& func, std::shared_ptr<Promise
 template <typename Func, typename Promise>
 void InitAwareTask<Func, Promise>::OnInitializeFailure(std::exception_ptr eptr) noexcept
 {
-    m_promise->set_exception(std::move(eptr));
+    try
+    {
+        m_promise->set_exception(std::move(eptr));
+    }
+    catch (const std::future_error&)
+    {
+        // Promise already satisfied — ignore
+    }
+}
+
+template <typename Func, typename Promise>
+void InitAwareTask<Func, Promise>::OnExecuteFailure(std::exception_ptr eptr) noexcept
+{
+    try
+    {
+        m_promise->set_exception(std::move(eptr));
+    }
+    catch (const std::future_error&)
+    {
+        // Promise already satisfied — ignore
+    }
 }
 
 } // namespace PBB::Thread

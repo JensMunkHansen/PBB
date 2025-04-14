@@ -77,7 +77,6 @@ inline std::string format(const std::string& fmt, const T& value)
 
 #include <iostream>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 #include <thread>
 
@@ -135,26 +134,26 @@ void ParallelForInThread()
 class PartialSummationFunctor
 {
   public:
-    int globalSum;
-    std::unique_ptr<PBB::ThreadLocal<int>> threadLocalStorage;
+    short globalSum;
+    std::unique_ptr<PBB::ThreadLocal<short>> threadLocalStorage;
 
     explicit PartialSummationFunctor()
     {
         globalSum = 0;
-        threadLocalStorage = std::make_unique<PBB::ThreadLocal<int>>();
+        threadLocalStorage = std::make_unique<PBB::ThreadLocal<short>>();
     }
 
     // Initialize thread-local variables
     void Initialize()
     {
-        int& localSum = threadLocalStorage->Local();
+        short& localSum = threadLocalStorage->Local();
         localSum = 0;
     }
 
     // Process data within the given range
     void operator()(int iStart, int iEnd)
     {
-        int& localSum = threadLocalStorage->Local();
+        short& localSum = threadLocalStorage->Local();
         for (int i = iStart; i < iEnd; ++i)
         {
             localSum += i; // Sum the range of numbers
@@ -230,7 +229,7 @@ struct VectorOutputFunctor
 
 } // namespace
 
-TEST_CASE("ParallelFor_TwoInvocations_ResultsCorrect", "[ParallelFor]")
+TEST_CASE("TwoInvocations_ResultsCorrect", "[ParallelFor]")
 {
     std::thread t1(ParallelForInThread);
     std::thread t2(ParallelForInThread);
@@ -239,14 +238,7 @@ TEST_CASE("ParallelFor_TwoInvocations_ResultsCorrect", "[ParallelFor]")
     t2.join();
 }
 
-// Fails using clang++16, clang++18
-TEST_CASE("ParallelFor_ThreadThrowingOperator_ErrorCodeReturned", "[ParallelFor]")
-{
-    TaskThrowingUsingOperator task;
-    REQUIRE(PBB::ParallelFor(0, 100, task) == 1);
-}
-
-TEST_CASE("ParallelFor_PartialSummationUsingThreadLocal_ValidResult", "[ParallelFor]")
+TEST_CASE("PartialSummationUsingThreadLocal_ValidResult", "[ParallelFor]")
 {
     PartialSummationFunctor func;
     PBB::ParallelFor(0, 100, func);
@@ -256,36 +248,14 @@ TEST_CASE("ParallelFor_PartialSummationUsingThreadLocal_ValidResult", "[Parallel
 #endif
 }
 
-TEST_CASE("ParallelFor_ThreadLocalVectors_ValidResult", "[ParallelFor]")
+TEST_CASE("ThreadLocalVectors_ValidResult", "[ParallelFor]")
 {
     VectorOutputFunctor func;
     PBB::ParallelFor(0, 100, func);
     REQUIRE(func.allValues.size() == 100);
 }
 
-TEST_CASE("ParallelFor_AllThreadsThrowingOperator_ErrorCodeReturned", "[ParallelFor]")
-{
-    auto func = []
-    {
-        struct
-        {
-            void Initialize() {}
-
-            [[noreturn]] void operator()(int begin, int end)
-            {
-                PBB_UNREFERENCED_PARAMETER(begin);
-                PBB_UNREFERENCED_PARAMETER(end);
-
-                throw std::runtime_error(fmt_shim::format(
-                  "Runtime error in operator() [thread {}]", std::this_thread::get_id()));
-            }
-        } f;
-        return f;
-    }();
-    REQUIRE(PBB::ParallelFor(0, 1000, func) == 1);
-}
-
-TEST_CASE("ParallelFor_AllThreadsThrowingOnInitialize_ErrorCodeReturned", "[ParallelFor]")
+TEST_CASE("AllThreadsThrowingOnInitialize_ErrorCodeReturned", "[ParallelFor]")
 {
     auto func = []
     {
@@ -300,6 +270,34 @@ TEST_CASE("ParallelFor_AllThreadsThrowingOnInitialize_ErrorCodeReturned", "[Para
             {
                 PBB_UNREFERENCED_PARAMETER(i);
                 PBB_UNREFERENCED_PARAMETER(end);
+            }
+        } f;
+        return f;
+    }();
+    REQUIRE(PBB::ParallelFor(0, 1000, func) == 1);
+}
+
+TEST_CASE("ThreadThrowingOperator_ErrorCodeReturned", "[ParallelFor]")
+{
+    TaskThrowingUsingOperator task;
+    REQUIRE(PBB::ParallelFor(0, 100, task) == 1);
+}
+
+TEST_CASE("AllThreadsThrowingOperator_ErrorCodeReturned", "[ParallelFor]")
+{
+    auto func = []
+    {
+        struct
+        {
+            void Initialize() {}
+
+            [[noreturn]] void operator()(int begin, int end)
+            {
+                PBB_UNREFERENCED_PARAMETER(begin);
+                PBB_UNREFERENCED_PARAMETER(end);
+
+                throw std::runtime_error(fmt_shim::format(
+                  "Runtime error in operator() [thread {}]", std::this_thread::get_id()));
             }
         } f;
         return f;
