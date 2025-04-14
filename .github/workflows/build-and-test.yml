@@ -46,5 +46,6 @@ jobs:
         run: ctest --preset core-test --test-dir build/linux-gcc -C Release
 
       - name: Sanitize
-        run: cmake --build build/linux-gcc --config Asan
-        run: ctest --preset core-test --test-dir build/linux-gcc -C Asan
+        run: |
+          cmake --build build/linux-gcc --config Asan
+          ctest --preset core-test --test-dir build/linux-gcc -C Asan
