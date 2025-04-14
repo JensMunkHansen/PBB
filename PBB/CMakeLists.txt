@@ -60,6 +60,7 @@ if(NOT PBB_HEADER_ONLY)
         ThreadPoolSingleton.h
     PRIVATE
       PhoenixSingleton.hpp
+      ThreadLocal.cxx
       ThreadPoolCommon.cxx
       ThreadPoolCustom.cxx
       ThreadPoolSingleton.cxx

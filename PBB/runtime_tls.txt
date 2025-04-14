@@ -1,0 +1,9 @@
+template <typename T>
+class IThreadLocal {
+public:
+    virtual ~IThreadLocal() = default;
+    virtual T& Local() = 0;
+    virtual const std::vector<T*>& GetRegistry() const = 0;
+};
+
+// Store this inside std::unique_ptr<IThreadLocal<T>> to pick one at runtime.

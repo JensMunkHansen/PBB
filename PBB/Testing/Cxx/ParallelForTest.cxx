@@ -230,7 +230,7 @@ struct VectorOutputFunctor
 
 } // namespace
 
-TEST_CASE("ParallelFor_TwoInvocations_ResultsCorrect", "[ParallelFor]")
+TEST_CASE("TwoInvocations_ResultsCorrect", "[ParallelFor]")
 {
     std::thread t1(ParallelForInThread);
     std::thread t2(ParallelForInThread);
@@ -239,14 +239,27 @@ TEST_CASE("ParallelFor_TwoInvocations_ResultsCorrect", "[ParallelFor]")
     t2.join();
 }
 
+#if 0
+TEST_CASE("TwoInvocations_SameInstance_ResultsCorrect", "[ParallelFor]")
+{
+    PartialSummationFunctor task;
+
+    std::thread t1([&] { PBB::ParallelFor(0, 100, task); });
+    std::thread t2([&] { PBB::ParallelFor(0, 100, task); });
+
+    t1.join();
+    t2.join();
+}
+#endif
+
 // Fails using clang++16, clang++18
-TEST_CASE("ParallelFor_ThreadThrowingOperator_ErrorCodeReturned", "[ParallelFor]")
+TEST_CASE("ThreadThrowingOperator_ErrorCodeReturned", "[ParallelFor]")
 {
     TaskThrowingUsingOperator task;
     REQUIRE(PBB::ParallelFor(0, 100, task) == 1);
 }
 
-TEST_CASE("ParallelFor_PartialSummationUsingThreadLocal_ValidResult", "[ParallelFor]")
+TEST_CASE("PartialSummationUsingThreadLocal_ValidResult", "[ParallelFor]")
 {
     PartialSummationFunctor func;
     PBB::ParallelFor(0, 100, func);
@@ -256,14 +269,14 @@ TEST_CASE("ParallelFor_PartialSummationUsingThreadLocal_ValidResult", "[Parallel
 #endif
 }
 
-TEST_CASE("ParallelFor_ThreadLocalVectors_ValidResult", "[ParallelFor]")
+TEST_CASE("ThreadLocalVectors_ValidResult", "[ParallelFor]")
 {
     VectorOutputFunctor func;
     PBB::ParallelFor(0, 100, func);
     REQUIRE(func.allValues.size() == 100);
 }
 
-TEST_CASE("ParallelFor_AllThreadsThrowingOperator_ErrorCodeReturned", "[ParallelFor]")
+TEST_CASE("AllThreadsThrowingOperator_ErrorCodeReturned", "[ParallelFor]")
 {
     auto func = []
     {
@@ -285,7 +298,7 @@ TEST_CASE("ParallelFor_AllThreadsThrowingOperator_ErrorCodeReturned", "[Parallel
     REQUIRE(PBB::ParallelFor(0, 1000, func) == 1);
 }
 
-TEST_CASE("ParallelFor_AllThreadsThrowingOnInitialize_ErrorCodeReturned", "[ParallelFor]")
+TEST_CASE("AllThreadsThrowingOnInitialize_ErrorCodeReturned", "[ParallelFor]")
 {
     auto func = []
     {
