@@ -60,6 +60,9 @@ if(NOT PBB_HEADER_ONLY)
         ThreadPoolSingleton.h
     PRIVATE
       PhoenixSingleton.hpp
+      #SafeThreadLocal.hpp
+      #SafeToolsAPI.cxx
+      #SafeFunctors.txx
       ThreadPoolCommon.cxx
       ThreadPoolCustom.cxx
       ThreadPoolSingleton.cxx

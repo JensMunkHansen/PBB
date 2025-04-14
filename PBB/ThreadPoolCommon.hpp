@@ -45,6 +45,10 @@ class IThreadTask
     {
         PBB_UNREFERENCED_PARAMETER(eptr);
     }
+    virtual void OnExecuteFailure(std::exception_ptr eptr) noexcept
+    {
+        PBB_UNREFERENCED_PARAMETER(eptr);
+    }
 
   protected:
     IThreadTask() = default;
@@ -60,9 +64,9 @@ class ThreadTask : public IThreadTask
 {
   public:
     explicit ThreadTask(Func&& func);
-    void Execute() final;
+    void Execute() override;
 
-  private:
+  protected:
     Func m_func;
 };
 
@@ -99,6 +103,7 @@ class InitAwareTask : public ThreadTask<Func>
 
     explicit InitAwareTask(Func&& func, std::shared_ptr<Promise> promise);
     void OnInitializeFailure(std::exception_ptr eptr) noexcept override;
+    void OnExecuteFailure(std::exception_ptr eptr) noexcept override;
 
   private:
     std::shared_ptr<Promise> m_promise;
