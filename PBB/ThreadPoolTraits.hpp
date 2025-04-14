@@ -145,11 +145,6 @@ struct ThreadPoolTraits<Tags::CustomPool>
                         continue; // Skip Execute
                     }
                 }
-                else
-                {
-                    // No initTask found — just continue
-                    continue;
-                }
             }
 
             // Always execute - unless initialization failed.
