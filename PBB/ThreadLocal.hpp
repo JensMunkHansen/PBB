@@ -19,6 +19,7 @@
 #include <vector>
 
 #include <PBB/Config.h>
+#include <PBB/IThreadLocal.hpp>
 #include <PBB/Memory.hpp>
 
 #ifdef PBB_USE_TBB_MAP
@@ -29,16 +30,6 @@ namespace PBB
 {
 namespace detail::v17
 {
-template <typename T, typename U>
-class IThreadLocal
-{
-  public:
-    virtual ~IThreadLocal() = default;
-    virtual U& Local() = 0;
-    const std::vector<U*>& GetRegistry() const;
-    std::mutex& GetMutex();
-};
-// requires std::is_default_constructible_v<U>
 
 template <typename T, typename U = UnderlyingTypeT<T>,
   typename = std::enable_if_t<std::is_default_constructible_v<U>>>
