@@ -2,11 +2,17 @@ name: Build and Test (Linux)
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - features/**
   pull_request:
-    types: [opened, reopened, synchronize]
-    branches: [ main ]
-
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - main
+      - features/**
 jobs:
   build-and-test:
     runs-on: ubuntu-22.04    
