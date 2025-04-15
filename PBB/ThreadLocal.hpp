@@ -29,12 +29,20 @@ namespace PBB
 {
 namespace detail::v17
 {
-
+template <typename T, typename U>
+class IThreadLocal
+{
+  public:
+    virtual ~IThreadLocal() = default;
+    virtual U& Local() = 0;
+    const std::vector<U*>& GetRegistry() const;
+    std::mutex& GetMutex();
+};
 // requires std::is_default_constructible_v<U>
 
 template <typename T, typename U = UnderlyingTypeT<T>,
   typename = std::enable_if_t<std::is_default_constructible_v<U>>>
-class ThreadLocal
+class ThreadLocal : public IThreadLocal<T, U>
 {
   private:
     using StorageSharedPtr = std::shared_ptr<U>;
@@ -53,8 +61,7 @@ class ThreadLocal
 
   public:
     ThreadLocal();
-
-    U& Local();
+    U& Local() override;
     const std::vector<U*>& GetRegistry() const;
     std::mutex& GetMutex();
 };
