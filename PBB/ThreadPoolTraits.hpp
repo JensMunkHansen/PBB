@@ -33,6 +33,11 @@ struct ThreadPoolTraits
 //! ThreadPoolTraits<CustomPool>
 /*! Specialization of the worker loop and submit functions to
     handle a per-thread initialization function and exception handling
+
+    BUG: This will never work. Thread-local variable has to be per task and
+    per thread.
+
+    The exception handling is correct though
  */
 template <>
 struct ThreadPoolTraits<Tags::CustomPool>
@@ -42,7 +47,8 @@ struct ThreadPoolTraits<Tags::CustomPool>
     /**
      * WorkerLoop
      *
-     * @brief Workerloop supporting an initialization function and exception handling
+     * @brief Workerloop supporting an initialization function and
+     * exception handling
      *
      * @param ThreadPool instance
      */

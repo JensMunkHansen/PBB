@@ -2,7 +2,6 @@
 
 #include "PBB/ThreadPool.hpp"
 #include "PBB/ThreadPoolTags.hpp"
-#include <PBB/ParallelFor.hpp>
 #include <PBB/ThreadLocal.hpp>
 
 #include <iostream>
@@ -17,5 +16,5 @@ namespace
 
 TEST_CASE("PlaceHolder", "[ThreadLocal]")
 {
-  REQUIRE(true);
+    REQUIRE(true);
 }

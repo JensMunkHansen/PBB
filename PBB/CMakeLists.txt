@@ -27,7 +27,6 @@ target_sources(${TARGET_NAME}
       ThreadLocal.hpp
       MeyersSingleton.hpp        
       MRMWQueue.hpp
-      ParallelFor.hpp
       ThreadPool.hpp
       ThreadPoolBase.hpp
       ThreadPoolCommon.hpp
