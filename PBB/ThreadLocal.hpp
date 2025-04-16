@@ -55,8 +55,17 @@ class ThreadLocal : public IThreadLocal<T, U>
     U& Local() override;
     const std::vector<U*>& GetRegistry() const;
     std::mutex& GetMutex();
-};
 
+    class ItImpl : public IThreadLocal<T, U>::ItImpl
+    {
+      public:
+        using InnerIter = typename std::vector<T*>::const_iterator;
+
+      private:
+        InnerIter _it;
+        friend class ThreadLocal<T, U>; // For access to std::vector
+    };
+};
 } // namespace detail::v17
 
 } // namespace PBB
