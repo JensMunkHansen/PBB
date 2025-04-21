@@ -149,3 +149,5 @@ class ThreadPoolBase
 };
 
 } // namespace PBB::Thread
+
+#include <PBB/ThreadPoolBase.inl>

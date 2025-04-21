@@ -29,6 +29,7 @@ target_sources(${TARGET_NAME}
       MRMWQueue.hpp
       ThreadPool.hpp
       ThreadPoolBase.hpp
+      ThreadPoolBase.inl
       ThreadPoolCommon.hpp
       ThreadPoolCommon.txx
       ThreadPoolCustom.hpp

@@ -1,20 +1,6 @@
 #pragma once
-
-#include <PBB/ThreadPool.hpp>
-
 namespace PBB::Thread
 {
-
-template <typename Tag>
-template <typename Func, typename... Args>
-auto ThreadPool<Tag>::SubmitDefault(Func&& func, Args&&... args, void* key)
-{
-    // Call default submit
-    return this->ThreadPoolBase<Tag, ThreadPool<Tag>>::DefaultSubmit(
-      std::forward<Func>(func), std::forward<Args>(args)..., key);
-}
-
-#if 0
 template <typename Tag, typename Derived>
 template <typename Func, typename... Args>
 requires noexcept_invocable<Func, Args...>
@@ -57,5 +43,4 @@ auto ThreadPoolBase<Tag, Derived>::DefaultSubmit(Func&& func, Args&&... args, vo
 #endif
     return result;
 }
-#endif
-} // namespace PBB::Thread
+}
