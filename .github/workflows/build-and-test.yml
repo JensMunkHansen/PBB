@@ -1,57 +1,130 @@
 name: Build and Test (Linux)
 
 on:
+  workflow_dispatch:
+    inputs:
+      library-type:
+        description: "Select library type"
+        required: true
+        default: STATIC
+        type: choice
+        options:
+          - STATIC
+          - SHARED
+      build-type:
+        description: "Select build type"
+        required: true
+        default: Release
+        type: choice
+        options:
+          - Debug
+          - Release
   push:
     branches:
-      - main
-      - features/**
+     - main
+     - VTKTools
+     - WindowsAsan
   pull_request:
     types:
-      - opened
-      - reopened
-      - synchronize
+     - opened
+     - reopened
+     - synchronize
     branches:
-      - main
-      - features/**
+     - main
+     - VTKTools
+     - WindowsAsan
+     - features/**
+
 jobs:
   build-and-test:
+    if: github.event_name != 'push' || github.event.head_commit.message != 'Merge pull request'
     runs-on: ubuntu-22.04    
-
     steps:
+      - name: Validate PBB_LIBRARY_TYPE and Build Type
+        run: |
+          library_type="${{ github.event.inputs.library-type || 'STATIC' }}"
+          build_type="${{ github.event.inputs.build-type || 'Release' }}"
+
+          if [ "$library_type" != "STATIC" ] && [ "$library_type" != "SHARED" ]; then
+            echo "❌ Invalid library type: $library_type"
+            echo "Allowed values: STATIC or SHARED"
+            exit 1
+          else
+            echo "✅ Valid library type: $library_type"
+          fi
+
+          if [ "$build_type" != "Debug" ] && [ "$build_type" != "Release" ]; then
+            echo "❌ Invalid build type: $build_type"
+            echo "Allowed values: Debug or Release"
+            exit 1
+          else
+            echo "✅ Valid build type: $build_type"
+          fi
+
+          echo "PBB_LIBRARY_TYPE=$library_type" >> $GITHUB_ENV
+          echo "BUILD_TYPE=$build_type" >> $GITHUB_ENV- name: Validate PBB_LIBRARY_TYPE
       - name: Checkout source
         uses: actions/checkout@v4
         with:
           submodules: recursive
-
+          fetch-depth: 0  # <--- important: full history
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build cmake g++
 
-      - name: Cache Catch2
+      - name: Restore Catch2 cache
         id: cache-catch2
         uses: actions/cache@v3
         with:
-          path: ${{ github.workspace }}/catch2-install
+          path: |
+            ${{ github.workspace }}/catch2-install
+            ${{ github.workspace }}/Catch2/build
           key: catch2-3.5.2-${{ runner.os }}
 
-      - name: Build and install Catch2 (if cache miss)
+      - name: Clone Catch2
         if: steps.cache-catch2.outputs.cache-hit != 'true'
-        run: |
-          git clone --branch v3.5.2 --depth 1 https://github.com/catchorg/Catch2.git
-          cmake -S Catch2 -B Catch2/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/catch2-install
-          cmake --build Catch2/build --target install
-          
+        run: git clone --branch v3.5.2 --depth 1 https://github.com/catchorg/Catch2.git
+
+      - name: Configure Catch2
+        if: steps.cache-catch2.outputs.cache-hit != 'true'
+        run: cmake -S Catch2 -B Catch2/build -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/catch2-install
+
+      - name: Build and install Catch2 (Release)
+        if: steps.cache-catch2.outputs.cache-hit != 'true'
+        run: cmake --build Catch2/build --target install --config Release
+
       - name: Configure with CMake Preset
-        run: cmake --preset linux-gcc -DCatch2_DIR=${{ github.workspace }}/catch2-install/lib/cmake/Catch2
+        run: cmake --preset linux-gcc -DCatch2_DIR=${{ github.workspace }}/catch2-install/lib/cmake/Catch2 -DPBB_LIBRARY_TYPE=${{ github.event.inputs.library-type || 'STATIC' }}
 
-      - name: Build project
-        run: cmake --build build/linux-gcc --config Release
+      - name: Build project (${{ github.event.inputs.build-type || 'Release' }})
 
-      - name: Run tests
-        run: ctest --preset core-test --test-dir build/linux-gcc -C Release
+        run: cmake --build build/linux-gcc --config ${{ github.event.inputs.build-type || 'Release' }}
+
+      - name: Run tests (${{ github.event.inputs.build-type || 'Release' }})
+        run: ctest --preset core-test --test-dir build/linux-gcc -C ${{ github.event.inputs.build-type || 'Release' }}
 
       - name: Sanitize
         run: |
           cmake --build build/linux-gcc --config Asan
           ctest --preset core-test --test-dir build/linux-gcc -C Asan
+
+      # ✅ This step runs even if earlier steps fail
+      - name: Save Catch2 build to cache (even if later steps fail)
+        if: always() && steps.cache-catch2.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            ${{ github.workspace }}/catch2-install
+            ${{ github.workspace }}/Catch2/build
+          key: catch2-3.5.2-${{ runner.os }}
+  cleanup-catch2-cache:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.event.head_commit.message == 'Merge pull request'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Delete Catch2 Cache
+        run: |
+          echo "Deleting Catch2 cache associated with the merged branch..."
+          rm -rf ${{ github.workspace }}/catch2-install
+          rm -rf ${{ github.workspace }}/Catch2/build
+          echo "Catch2 cache deleted successfully."

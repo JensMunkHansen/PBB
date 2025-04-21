@@ -1,16 +1,71 @@
 name: Build and Test (Windows)
 
-# on:
-#   push:
-#     branches: [ main ]
-#   pull_request:
-#     branches: [ main ]
+on:
+  workflow_dispatch:
+    inputs:
+      library-type:
+        description: "Select library type"
+        required: true
+        default: STATIC
+        type: choice
+        options:
+          - STATIC
+          - SHARED
+      build-type:
+        description: "Select build type"
+        required: true
+        default: Release
+        type: choice
+        options:
+          - Debug
+          - Release
+  push:
+    branches:
+     - main
+     - VTKTools
+     - WindowsAsan
+  pull_request:
+    types:
+     - opened
+     - reopened
+     - synchronize
+    branches:
+     - main
+     - VTKTools
+     - WindowsAsan
+     - features/**
 
 jobs:
   build-and-test:
+    if: github.event_name != 'push' || (github.event.pull_request == null && github.event.head_commit.message != 'Merge pull request')
     runs-on: windows-latest
 
     steps:
+      - name: Validate PBB_LIBRARY_TYPE
+        run: |
+          $library_type = "${{ github.event.inputs.library-type || 'STATIC' }}"
+          $build_type = "${{ github.event.inputs.build-type || 'Release' }}"
+      
+          if ($library_type -ne "STATIC" -and $library_type -ne "SHARED") {
+            Write-Host "❌ Invalid library type: $library_type"
+            Write-Host "Allowed values: STATIC or SHARED"
+            exit 1
+          } else {
+            Write-Host "✅ Valid library type: $library_type"
+          }
+      
+          if ($build_type -ne "Debug" -and $build_type -ne "Release") {
+            Write-Host "❌ Invalid build type: $build_type"
+            Write-Host "Allowed values: Debug or Release"
+            exit 1
+          } else {
+            Write-Host "✅ Valid build type: $build_type"
+          }
+      
+          echo "PBB_LIBRARY_TYPE=$library_type" >> $env:GITHUB_ENV
+          echo "BUILD_TYPE=$build_type" >> $env:GITHUB_ENV
+        shell: pwsh
+
       - name: Checkout source
         uses: actions/checkout@v4
         with:
@@ -24,27 +79,128 @@ jobs:
           choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System' --no-progress -y
           choco install ninja --no-progress -y
 
-      - name: Cache Catch2
+      # --- Catch2 Build (Release or Debug) ---
+      - name: "Restore Catch2 cache (${{ env.BUILD_TYPE }})"
         id: cache-catch2
         uses: actions/cache@v3
         with:
-          path: ${{ github.workspace }}\catch2-install
-          key: catch2-3.5.2-${{ runner.os }}
+          path: |
+            ${{ github.workspace }}\catch2-install-${{ env.BUILD_TYPE }}
+            ${{ github.workspace }}\Catch2-${{ env.BUILD_TYPE }}\build
+          key: catch2-3.5.2-${{ env.BUILD_TYPE }}-${{ runner.os }}
 
-      - name: Build and install Catch2 (if cache miss)
+      - name: "Clone Catch2 (${{ env.BUILD_TYPE }})"
+        if: steps.cache-catch2.outputs.cache-hit != 'true'
+        run: git clone --branch v3.5.2 --depth 1 https://github.com/catchorg/Catch2.git Catch2-${{ env.BUILD_TYPE }}
+
+      # --- Clean this up to just use env.BUILD_TYPE
+      - name: "Configure Catch2 (${{ env.BUILD_TYPE }})"
         if: steps.cache-catch2.outputs.cache-hit != 'true'
         run: |
-          git clone --branch v3.5.2 --depth 1 https://github.com/catchorg/Catch2.git
-          cmake -S Catch2 -B Catch2/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\catch2-install"
-          cmake --build Catch2/build --target install --config Release
+          if ($env:BUILD_TYPE -eq 'Debug') {
+           cmake -S Catch2-Debug -B Catch2-Debug-build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS="/MDd" -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\catch2-install-Debug"
+          } elseif ($env:BUILD_TYPE -eq 'Release') {
+             cmake -S Catch2-Release -B Catch2-Release-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="/MD" -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\catch2-install-Release"
+          }
+        shell: pwsh
+      - name: "Build and install Catch2 (${{ env.BUILD_TYPE }})"
+        if: steps.cache-catch2.outputs.cache-hit != 'true'
+        run: |
+          cmake --build Catch2-${{ env.BUILD_TYPE }}-build --target install --config ${{ env.BUILD_TYPE }}
 
+      - name: Check Catch2 Cache Files
+        run: |
+          echo "Checking Catch2 cache directory"
+          dir "${{ github.workspace }}\catch2-install-${{ env.BUILD_TYPE }}\lib\cmake\Catch2"
+          dir "${{ github.workspace }}\catch2-install-${{ env.BUILD_TYPE }}\lib"
+        shell: pwsh
+          
+      # --- Restore Catch2 (ASan) cache (only for Release builds) ---
+      - name: Restore Catch2 (ASan) cache
+        id: cache-catch2-asan
+        if: ${{ env.BUILD_TYPE == 'Release' }}
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ github.workspace }}\catch2-asan-install
+            ${{ github.workspace }}\Catch2-asan\build
+          key: catch2-3.5.2-asan-${{ runner.os }}
+
+      # --- Clone Catch2 (ASan) only if cache is missed and build type is Release ---
+      - name: Clone Catch2 (ASan)
+        if: ${{ env.BUILD_TYPE == 'Release' && steps.cache-catch2-asan.outputs.cache-hit != 'true' }}
+        run: git clone --branch v3.5.2 --depth 1 https://github.com/catchorg/Catch2.git Catch2Asan
+
+      # --- Configure Catch2 (ASan) ---
+      - name: Configure Catch2 (ASan)
+        if: ${{ env.BUILD_TYPE == 'Release' && steps.cache-catch2-asan.outputs.cache-hit != 'true' }}
+        run: |
+          cmake -S Catch2Asan -B Catch2-asan/build
+          -DCMAKE_CONFIGURATION_TYPES="Asan;Release;Debug"
+          -DCMAKE_CXX_FLAGS="/EHsc /MD /Zi /fsanitize=address"
+          -DCMAKE_C_FLAGS="/fsanitize=address"
+          -DCMAKE_LINKER_FLAGS="/INFERASANLIBS"
+          -DCMAKE_EXE_LINKER_FLAGS="/INFERASANLIBS"
+          -DCMAKE_SHARED_LINKER_FLAGS="/INFERASANLIBS"
+          -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\catch2-asan-install"
+
+      # --- Build and install Catch2 (ASan) ---
+      - name: Build and install Catch2 (ASan)
+        if: ${{ env.BUILD_TYPE == 'Release' && steps.cache-catch2-asan.outputs.cache-hit != 'true' }}
+        run: cmake --build Catch2-asan/build --target install --config Asan
+        
+      # --- Configure/Build/Run ---
       - name: Configure with CMake Preset
-        run: >
-          cmake --preset windows-msvc
-          -DCatch2_DIR="${{ github.workspace }}\catch2-install\lib\cmake\Catch2"
+        run: |
+          cmake --preset windows-msvc -DCatch2_DIR="${{ github.workspace }}\catch2-install-${{ env.BUILD_TYPE }}\lib\cmake\Catch2" -DPBB_LIBRARY_TYPE=${{ env.PBB_LIBRARY_TYPE }}
+      - name: "Build project (${{ env.BUILD_TYPE }})"
+        run: cmake --build build/windows-msvc --config ${{ env.BUILD_TYPE }}
 
-      - name: Build project
-        run: cmake --build build/windows-msvc --config Release
+      - name: Run tests (${{ env.BUILD_TYPE }})
+        run: ctest --preset core-test --test-dir build/windows-msvc -C ${{ env.BUILD_TYPE }}
 
-      - name: Run tests
-        run: ctest --preset core-test --test-dir build/windows-msvc -C Release
+      # --- Configure/Build/Run (ASan) ---
+      - name: Configure with CMake Preset (ASan)
+        if: ${{ env.BUILD_TYPE == 'Release' }}
+        run: |
+          cmake --preset windows-msvc -DCatch2_DIR="${{ github.workspace }}\catch2-asan-install\lib\cmake\Catch2" -DPBB_LIBRARY_TYPE=${{ env.PBB_LIBRARY_TYPE }}
+
+      - name: Build project (ASan)
+        if: ${{ env.BUILD_TYPE == 'Release' }}
+        run: cmake --build build/windows-msvc --config Asan
+
+      - name: Run tests (ASan)
+        if: ${{ env.BUILD_TYPE == 'Release' }}
+        run: ctest --preset core-test --test-dir build/windows-msvc -C Asan
+
+      # --- Save caches (always) ---
+      - name: Save Catch2 to cache
+        if: always() && steps.cache-catch2.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            ${{ github.workspace }}/catch2-install-${{ env.BUILD_TYPE }}
+            ${{ github.workspace }}/Catch2-${{ env.BUILD_TYPE }}/build
+          key: catch2-3.5.2-${{ env.BUILD_TYPE }}-${{ runner.os }}
+
+      - name: Save Catch2 (ASan) to cache
+        if: always() && steps.cache-catch2-asan.outputs.cache-hit != 'true' && ${{ github.event.inputs.build-type == 'Release' }}
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            ${{ github.workspace }}/catch2-asan-install
+            ${{ github.workspace }}/Catch2-asan/build
+          key: catch2-3.5.2-asan-${{ runner.os }}
+
+  cleanup-catch2-cache:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.event.head_commit.message == 'Merge pull request'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Delete Catch2 Cache
+        run: |
+          echo "Deleting Catch2 cache associated with the merged branch..."
+          rm -rf ${{ github.workspace }}/catch2-install-${{ env.BUILD_TYPE }}
+          rm -rf ${{ github.workspace }}/catch2-asan-install
+          rm -rf ${{ github.workspace }}/Catch2-${{ env.BUILD_TYPE }}\build
+          rm -rf ${{ github.workspace }}/Catch2-asan\build
+          echo "Catch2 cache deleted successfully."
