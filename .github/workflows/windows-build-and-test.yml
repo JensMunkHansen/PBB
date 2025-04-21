@@ -135,15 +135,15 @@ jobs:
       - name: Configure Catch2 (ASan)
         if: ${{ env.BUILD_TYPE == 'Release' && steps.cache-catch2-asan.outputs.cache-hit != 'true' }}
         run: |
-          cmake -S Catch2Asan -B Catch2-asan/build
-          -DCMAKE_CONFIGURATION_TYPES="Asan;Release;Debug"
-          -DCMAKE_CXX_FLAGS="/EHsc /MD /Zi /fsanitize=address"
-          -DCMAKE_C_FLAGS="/fsanitize=address"
-          -DCMAKE_LINKER_FLAGS="/INFERASANLIBS"
-          -DCMAKE_EXE_LINKER_FLAGS="/INFERASANLIBS"
-          -DCMAKE_SHARED_LINKER_FLAGS="/INFERASANLIBS"
+          cmake -S Catch2Asan -B Catch2-asan/build `
+          -DCMAKE_CONFIGURATION_TYPES="Asan;Release;Debug" `
+          -DCMAKE_CXX_FLAGS="/EHsc /MD /Zi /fsanitize=address" `
+          -DCMAKE_C_FLAGS="/fsanitize=address" `
+          -DCMAKE_LINKER_FLAGS="/INFERASANLIBS" `
+          -DCMAKE_EXE_LINKER_FLAGS="/INFERASANLIBS" `
+          -DCMAKE_SHARED_LINKER_FLAGS="/INFERASANLIBS" `
           -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}\catch2-asan-install"
-
+        shell: pwsh
       # --- Build and install Catch2 (ASan) ---
       - name: Build and install Catch2 (ASan)
         if: ${{ env.BUILD_TYPE == 'Release' && steps.cache-catch2-asan.outputs.cache-hit != 'true' }}
