@@ -1,0 +1,29 @@
+Lifetime Safety: Ensuring No Thread Outlives the Functor
+To prevent any thread from referencing a functor after it goes out of scope, we use a combination of shared ownership and explicit non-deletion:
+
+The functor instance is wrapped as a std::shared_ptr<Functor> using a custom deleter:
+
+cpp
+Copy
+Edit
+std::shared_ptr<Functor> func_ptr(&func, [](Functor*) { /* no delete */ });
+This allows tasks and initializers to safely capture func_ptr without extending its lifetime beyond the ParallelFor call.
+
+A separate std::shared_ptr<bool> guard (func_guard) is captured in the initialization function.
+The main thread sets *func_guard = false after all tasks have joined, and the guard is checked in the initializer to assert safe access.
+
+All thread-local initialization caches (init_cache) are automatically cleared and refreshed per-thread using a global_epoch, ensuring no stale references remain between calls.
+
+This strategy ensures:
+
+No dangling reference to a destructed functor.
+
+Initialize() is only called when the functor is known to be alive.
+
+Execute() is only run once initialization has succeeded.
+
+✅ Safe
+✅ Deterministic
+✅ No need for intrusive functor design
+
+Let me know if you’d like that embedded directly into the code as a comment block!
