@@ -8,6 +8,7 @@
 
 #include <PBB/Common.hpp>
 #include <PBB/Config.h>
+#include <PBB/pbb_export.h>
 
 namespace PBB::Thread
 {
@@ -36,7 +37,7 @@ struct InitKey
 
 namespace PBB::Thread
 {
-class IThreadTask
+class PBB_EXPORT IThreadTask
 {
   public:
     virtual ~IThreadTask();
