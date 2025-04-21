@@ -4,6 +4,9 @@
 namespace PBB::Thread
 {
 ThreadPool<Tags::CustomPool>::~ThreadPool() = default;
+template class PBB_EXPORT ThreadPool<Tags::CustomPool>;
+class PBB_EXPORT ThreadPoolCustom;
+
 }
 
 /*

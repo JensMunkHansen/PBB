@@ -16,6 +16,10 @@ if (toolset)
     -T "${toolset}")
 endif ()
 
+if (NOT DEFINED example_binary_dir)
+  set(example_binary_dir "${binary}/${example_dir}")
+endif ()
+
 execute_process(
   COMMAND
     "${ctest}"
@@ -25,7 +29,7 @@ execute_process(
       "${generator}"
     --build-and-test
       "${source}/${example_dir}"
-      "${binary}/${example_dir}"
+      "${example_binary_dir}" #"${binary}/${example_dir}"
     --build-options
       ${cmake_arguments}
       "-DBUILD_TESTING:BOOL=ON"

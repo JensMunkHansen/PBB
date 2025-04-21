@@ -113,6 +113,7 @@ configure_file(
   "${PBB_BINARY_DIR}/.clang-tidy"
   COPYONLY)
 
+set(PBB_INSTALL_DIR "${CMAKE_BINARY_DIR}/install")
 if (BUILD_EXAMPLES)
   add_subdirectory(Examples)
 endif()

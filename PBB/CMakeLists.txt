@@ -30,6 +30,7 @@ target_sources(${TARGET_NAME}
       ThreadPool.hpp
       ThreadPoolBase.hpp
       ThreadPoolCommon.hpp
+      ThreadPoolCommon.txx
       ThreadPoolCustom.hpp
       ThreadPoolTags.hpp
       ThreadPoolTraits.hpp
@@ -57,8 +58,11 @@ if(NOT PBB_HEADER_ONLY)
       BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/..
       FILES
         ThreadPoolSingleton.h
+        PhoenixSingleton.hpp
+        Platform.hpp
+        ResettableSingleton.hpp
+        Common.hpp        
     PRIVATE
-      PhoenixSingleton.hpp
       ThreadPoolCommon.cxx
       ThreadPoolCustom.cxx
       ThreadPoolSingleton.cxx
