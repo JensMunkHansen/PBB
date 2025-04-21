@@ -8,9 +8,6 @@
 
 #include <PBB/Config.h>
 #include <PBB/ThreadPool.hpp>
-#ifndef PBB_HEADER_ONLY
-#include <PBB/ThreadPoolCommon.txx>
-#endif
 #include <PBB/ThreadPoolCustom.hpp>
 
 using namespace PBB::Thread;
