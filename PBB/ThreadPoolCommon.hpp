@@ -105,6 +105,7 @@ class InitAwareTask : public ThreadTask<Func>
 };
 
 } // namespace PBB::Thread
+#include <PBB/ThreadPoolCommon.txx>
 #ifdef PBB_HEADER_ONLY
 #include <PBB/ThreadPoolCommon.txx>
 namespace PBB::Thread
