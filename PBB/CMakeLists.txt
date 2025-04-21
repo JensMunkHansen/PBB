@@ -76,8 +76,10 @@ endif()
 if (PBB_HEADER_ONLY)
   target_compile_options(${TARGET_NAME} INTERFACE "-Wno-ctad-maybe-unsupported")
 endif()
-target_compile_options(${TARGET_NAME} INTERFACE "-Wno-padded")
-target_compile_options(${TARGET_NAME} INTERFACE "-Wno-documentation")
+if (NOT MSVC)
+  target_compile_options(${TARGET_NAME} INTERFACE "-Wno-padded")
+  target_compile_options(${TARGET_NAME} INTERFACE "-Wno-documentation")
+endif()
 spsSetDebugPostfix(${TARGET_NAME} d)
 
 # Some IDE's have poor support for FILE_SET
