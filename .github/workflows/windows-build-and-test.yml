@@ -184,7 +184,7 @@ jobs:
           key: catch2-3.5.2-${{ env.BUILD_TYPE }}-${{ runner.os }}
 
       - name: Save Catch2 (ASan) to cache
-        if: always() && steps.cache-catch2-asan.outputs.cache-hit != 'true' && ${{ github.event.inputs.build-type == 'Release' }}
+        if: always() && steps.cache-catch2-asan.outputs.cache-hit != 'true' && ${{ env.BUILD_TYPE  == 'Release' }}
         uses: actions/cache/save@v3
         with:
           path: |
