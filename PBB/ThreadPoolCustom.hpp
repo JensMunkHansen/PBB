@@ -1,7 +1,15 @@
-// In ThreadPoolCustomSpecializations.hpp
 #pragma once
 
+#include <any>
+#include <functional>
+#include <mutex>
+#include <shared_mutex>
+#include <type_traits>
+#include <unordered_map>
+#include <utility>
+
 #include <PBB/Config.h>
+#include <PBB/pbb_export.h>
 
 #ifdef PBB_HEADER_ONLY
 #include <PBB/MeyersSingleton.hpp>
@@ -13,9 +21,6 @@
 #include <PBB/ThreadPoolBase.hpp>
 #include <PBB/ThreadPoolTraits.hpp>
 
-#include <any>
-#include <shared_mutex>
-
 namespace PBB::Thread
 {
 
@@ -23,14 +28,14 @@ namespace PBB::Thread
 template <>
 class ThreadPool<Tags::CustomPool>
   : public MeyersSingleton<ThreadPool<Tags::CustomPool>>
-  , public ThreadPoolBase<Tags::CustomPool>
+  , public ThreadPoolBase<Tags::CustomPool, ThreadPool<Tags::CustomPool>>
 {
     friend class MeyersSingleton<ThreadPool<Tags::CustomPool>>;
 #else
 template <>
-class ThreadPool<Tags::CustomPool>
+class PBB_EXPORT ThreadPool<Tags::CustomPool>
   : public PhoenixSingleton<ThreadPool<Tags::CustomPool>>
-  , public ThreadPoolBase<Tags::CustomPool>
+  , public ThreadPoolBase<Tags::CustomPool, ThreadPool<Tags::CustomPool>>
 {
     friend class PhoenixSingleton<ThreadPool<Tags::CustomPool>>;
 #endif
@@ -39,22 +44,18 @@ class ThreadPool<Tags::CustomPool>
 
   protected:
     ThreadPool() = default;
-    ~ThreadPool() override; // = default;
+    ~ThreadPool() override;
 
     void Destroy();
 
   public:
-    void Worker()
-    {
-        ThreadPoolTraits<Tags::CustomPool>::WorkerLoop(*this);
-    }
-
     template <typename Func, typename... Args>
     requires std::invocable<Func, Args...>
     auto Submit(Func&& func, Args&&... args, void* key)
     {
+        // To please Microsoft, who cannot resolve this
         return ThreadPoolTraits<Tags::CustomPool>::Submit(
-          *this, std::forward<Func>(func), std::forward<Args>(args)..., key);
+          Self(), std::forward<Func>(func), std::forward<Args>(args)..., key);
     }
 
     template <typename Func, typename... Args>
@@ -97,6 +98,7 @@ class ThreadPool<Tags::CustomPool>
               });
         }
     }
+
     void RemoveInitialize(void* key)
     {
         std::unique_lock lock(m_initTasksMutex);
@@ -104,6 +106,16 @@ class ThreadPool<Tags::CustomPool>
     }
 
   private:
+    // To please Microsoft, who cannot fully resolve this
+    ThreadPool<Tags::CustomPool>& Self()
+    {
+        return *static_cast<ThreadPool<Tags::CustomPool>*>(this);
+    }
+
+    const ThreadPool<Tags::CustomPool>& Self() const
+    {
+        return *static_cast<const ThreadPool<Tags::CustomPool>*>(this);
+    }
     std::unordered_map<void*, std::function<std::any()>> m_initTasks;
     std::shared_mutex m_initTasksMutex;
 };
@@ -115,4 +127,4 @@ namespace PBB::Thread
 {
 inline ThreadPool<Tags::CustomPool>::~ThreadPool() = default;
 }
-#endif // PBB_HEADER_ONLY
+#endif

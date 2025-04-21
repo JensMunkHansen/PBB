@@ -11,8 +11,8 @@ namespace PBB::Thread
  *
  * Invalidates the queue and joins all running threads.
  */
-template <typename Tag>
-void ThreadPoolBase<Tag>::Destroy()
+template <typename Tag, typename Derived>
+void ThreadPoolBase<Tag, Derived>::Destroy()
 {
     this->m_done.test_and_set(std::memory_order_release);
 
@@ -41,8 +41,8 @@ void ThreadPoolBase<Tag>::Destroy()
  * subtracting one would turn it to UINT_MAX, so get the maximum of
  * hardware_concurrency() and 2 before subtracting 1.
  */
-template <typename Tag>
-ThreadPoolBase<Tag>::ThreadPoolBase()
+template <typename Tag, typename Derived>
+ThreadPoolBase<Tag, Derived>::ThreadPoolBase()
   : ThreadPoolBase(std::max(2u, std::thread::hardware_concurrency()) - 1u)
 {
 }
@@ -50,8 +50,8 @@ ThreadPoolBase<Tag>::ThreadPoolBase()
 /**
  * Constructor. No implicit conversion allowed
  */
-template <typename Tag>
-ThreadPoolBase<Tag>::ThreadPoolBase(std::size_t numThreads)
+template <typename Tag, typename Derived>
+ThreadPoolBase<Tag, Derived>::ThreadPoolBase(std::size_t numThreads)
 {
     this->m_done.clear();
     for (std::size_t i = 0; i < numThreads; ++i)
@@ -60,18 +60,16 @@ ThreadPoolBase<Tag>::ThreadPoolBase(std::size_t numThreads)
     }
 }
 
-template <typename Tag>
-ThreadPoolBase<Tag>::~ThreadPoolBase()
+template <typename Tag, typename Derived>
+ThreadPoolBase<Tag, Derived>::~ThreadPoolBase()
 {
     this->Destroy();
 }
 
-template <typename Tag>
-size_t ThreadPoolBase<Tag>::NThreadsGet() const
+template <typename Tag, typename Derived>
+size_t ThreadPoolBase<Tag, Derived>::NThreadsGet() const
 {
     return this->m_threads.size();
 }
 
-template <typename Tag>
-ThreadPool<Tag>::~ThreadPool() = default;
 } // namespace PBB::Thread

@@ -1,5 +1,9 @@
 #pragma once
 
+#if __cplusplus < 202002L
+#error "This header requires at least C++20"
+#endif
+
 #include <any>
 #include <exception>
 #include <iostream>
@@ -20,10 +24,14 @@ template <typename Tag>
 struct ThreadPoolTraits
 {
     PBB_DELETE_CTORS(ThreadPoolTraits);
-    static void WorkerLoop(auto& self) { self.DefaultWorkerLoop(); }
+    static void WorkerLoop(auto& self)
+    {
+        //        self.DefaultWorkerLoop();
+        self.InvokeDefaultWorkerLoop();
+    }
 
-    template <typename Func, typename... Args>
-    static auto Submit(auto& self, Func&& func, Args&&... args, void* key)
+    template <typename Pool, typename Func, typename... Args>
+    static auto Submit(Pool& self, Func&& func, Args&&... args, void* key)
     {
         // Just forward to DefaultSubmit, which requires noexcept.
         return self.SubmitDefault(std::forward<Func>(func), std::forward<Args>(args)..., key);
@@ -33,11 +41,6 @@ struct ThreadPoolTraits
 //! ThreadPoolTraits<CustomPool>
 /*! Specialization of the worker loop and submit functions to
     handle a per-thread initialization function and exception handling
-
-    BUG: This will never work. Thread-local variable has to be per task and
-    per thread.
-
-    The exception handling is correct though
  */
 template <>
 struct ThreadPoolTraits<Tags::CustomPool>
@@ -47,24 +50,27 @@ struct ThreadPoolTraits<Tags::CustomPool>
     /**
      * WorkerLoop
      *
-     * @brief Workerloop supporting an initialization function and
-     * exception handling
+     * @brief Workerloop supporting an initialization function and exception handling
      *
      * @param ThreadPool instance
      */
     static void WorkerLoop(auto& self)
     {
+
+#if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wexit-time-destructors"
+#endif
         thread_local bool initialized = false;
         thread_local void* init_key = nullptr; // Unique key for a group of tasks
         [[maybe_unused]] thread_local std::any
           init_result; // Hold result of a potential initialization function
+#if defined(__clang__)
 #pragma clang diagnostic pop
-
+#endif
         while (!self.m_done.test(std::memory_order_acquire))
         {
-            ThreadPoolBase<Tags::CustomPool>::TaskPayload pTask{ nullptr, nullptr };
+            typename std::remove_reference_t<decltype(self)>::TaskPayload pTask{ nullptr, nullptr };
 #ifdef PBB_USE_TBB_QUEUE
             {
                 // Acquire the lock before waiting on the condition variable
@@ -124,13 +130,23 @@ struct ThreadPoolTraits<Tags::CustomPool>
             {
                 std::function<void()> initTask = nullptr;
                 {
+#ifdef _MSC_VER
                     // Locate the initialization function
-                    std::shared_lock lock(self.m_initTasksMutex);
-                    auto it = self.m_initTasks.find(pTask.second);
+                    std::shared_lock<std::shared_mutex> lock(self.m_initTasksMutex);
+                    // Microsoft bug
+                    typename decltype(self.m_initTasks)::const_iterator it{};
+                    it = self.m_initTasks.find(pTask.second);
                     if (it != self.m_initTasks.end())
                     {
                         initTask = it->second;
                     }
+#else
+                    std::shared_lock lock(self.m_initTasksMutex);
+                    if (auto it = self.m_initTasks.find(pTask.second); it != self.m_initTasks.end())
+                    {
+                        initTask = it->second;
+                    }
+#endif
                 }
 
                 if (initTask)
@@ -165,8 +181,8 @@ struct ThreadPoolTraits<Tags::CustomPool>
      * @param parameter description
      * @return description
      */
-    template <typename Func, typename... Args>
-    static auto Submit(auto& self, Func&& func, Args&&... args, void* key)
+    template <typename Pool, typename Func, typename... Args>
+    static auto Submit(Pool& self, Func&& func, Args&&... args, void* key)
     {
         using ResultType = std::invoke_result_t<Func, Args...>;
         using Promise = std::promise<ResultType>;

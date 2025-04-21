@@ -17,6 +17,7 @@
 #include <vector>
 
 #include <PBB/Config.h>
+#include <PBB/pbb_export.h>
 #ifdef PBB_USE_TBB_QUEUE
 #include <tbb/concurrent_queue.h>
 #else
@@ -39,20 +40,24 @@ namespace PBB::Thread
 
 #ifdef PBB_HEADER_ONLY
 template <typename Tag>
-class ThreadPool
+class PBB_EXPORT ThreadPool
   : public MeyersSingleton<ThreadPool<Tag>>
-  , public ThreadPoolBase<Tag>
+  , public ThreadPoolBase<Tag, ThreadPool<Tag>>
 {
     friend class MeyersSingleton<ThreadPool<Tag>>;
 #else
 template <typename Tag>
-class ThreadPool
+class PBB_EXPORT ThreadPool
   : public PhoenixSingleton<ThreadPool<Tag>>
-  , public ThreadPoolBase<Tag>
+  , public ThreadPoolBase<Tag, ThreadPool<Tag>>
 {
     friend class PhoenixSingleton<ThreadPool<Tag>>;
 #endif
   public:
+    void InvokeDefaultWorkerLoop()
+    {
+        this->DefaultWorkerLoop();
+    }
     /**
      * @brief Submit
      *
@@ -86,11 +91,20 @@ class ThreadPool
     ThreadPool() = default;
     ~ThreadPool() override;
 
-    using ThreadPoolBase<Tag>::DefaultSubmit;
-    using ThreadPoolBase<Tag>::DefaultWorkerLoop;
+    using ThreadPoolBase<Tag, ThreadPool<Tag>>::DefaultSubmit;
+    using ThreadPoolBase<Tag, ThreadPool<Tag>>::DefaultWorkerLoop;
 };
 
 } // namespace PBB::Thread
 
 #include <PBB/ThreadPool.inl>
 #include <PBB/ThreadPool.txx>
+
+#ifdef PBB_HEADER_ONLY
+namespace PBB::Thread
+{
+template <typename Tag>
+ThreadPool<Tag>::~ThreadPool() = default;
+}
+
+#endif

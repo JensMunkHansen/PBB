@@ -1,14 +1,16 @@
 #pragma once
 
 #include <atomic>
+#ifdef PBB_USE_TBB_QUEUE
 #include <condition_variable>
 #include <functional>
-#include <future>
 #include <mutex>
+#endif
 #include <thread>
 #include <vector>
 
 #include <PBB/ThreadPoolCommon.hpp>
+#include <PBB/ThreadPoolTags.hpp>
 
 #ifdef PBB_USE_TBB_QUEUE
 #include <tbb/concurrent_queue.h>
@@ -28,10 +30,13 @@ struct ThreadPoolTraits;
 namespace PBB::Thread
 {
 
-template <typename Tag>
+template <typename Tag, typename Derived>
 class ThreadPoolBase
 {
   public:
+    Derived& Self() { return static_cast<Derived&>(*this); }
+    const Derived& Self() const { return static_cast<const Derived&>(*this); }
+
     // Alternatively, we can expose functions: DoneFlag, WorkQueue, Mutex and Condition to
     // be used by @ref ThreadPoolTraits
     template <typename>
@@ -56,7 +61,7 @@ class ThreadPoolBase
 
     void Worker()
     {
-        ThreadPoolTraits<Tag>::WorkerLoop(*this);
+        ThreadPoolTraits<Tag>::WorkerLoop(Self());
     }
 
     /**
@@ -80,6 +85,7 @@ class ThreadPoolBase
      *
      * TODO: Consider adding another trait without conditionals and yielding (busy)
      */
+  public:
     void DefaultWorkerLoop()
     {
         while (!m_done.test(std::memory_order_acquire))

@@ -10,13 +10,14 @@ template <typename Func, typename... Args>
 auto ThreadPool<Tag>::SubmitDefault(Func&& func, Args&&... args, void* key)
 {
     // Call default submit
-    return this->DefaultSubmit(std::forward<Func>(func), std::forward<Args>(args)..., key);
+    return this->ThreadPoolBase<Tag, ThreadPool<Tag>>::DefaultSubmit(
+      std::forward<Func>(func), std::forward<Args>(args)..., key);
 }
 
-template <typename Tag>
+template <typename Tag, typename Derived>
 template <typename Func, typename... Args>
 requires noexcept_invocable<Func, Args...>
-auto ThreadPoolBase<Tag>::DefaultSubmit(Func&& func, Args&&... args, void* key) noexcept
+auto ThreadPoolBase<Tag, Derived>::DefaultSubmit(Func&& func, Args&&... args, void* key) noexcept
 {
     static_assert(
       std::invocable<Func, Args...>, "Submitted task must be invocable with given args");
